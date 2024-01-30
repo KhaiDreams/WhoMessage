@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon -e ts,json --files src/server.ts",
-    "db:create": "npx sequelize-cli db:create",
-    "db:migrate": "npx sequelize-cli db:migrate",
-    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:create": "npx sequelize-cli db:create --config src/database/config/config.json",
+    "db:migrate": "npx sequelize-cli db:migrate --config src/database/config/config.json",
+    "db:seed": "npx sequelize-cli db:seed:all --config src/database/config/config.json",
     "db:reset": "npx sequelize-cli db:drop && npm run db:create && npm run db:migrate && npm run db:seed"
   },
   "author": "KhaiDreams",
