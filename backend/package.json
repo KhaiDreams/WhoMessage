@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon -e ts,json --files src/server.ts"
+    "dev": "nodemon -e ts,json --files src/server.ts",
+    "db:create": "npx sequelize-cli db:create",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:reset": "npx sequelize-cli db:drop && npm run db:create && npm run db:migrate && npm run db:seed"
   },
   "author": "KhaiDreams",
   "license": "ISC",
@@ -29,6 +33,7 @@
     "@types/sequelize": "^4.28.19",
     "@types/uuid": "^9.0.2",
     "nodemon": "^3.0.1",
+    "sequelize-cli": "^6.6.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   }
