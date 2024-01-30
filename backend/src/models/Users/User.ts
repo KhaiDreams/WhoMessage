@@ -46,7 +46,20 @@ export const User = sequelize.define<UserInstance>('User',{
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+
+    createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'create_at', // nome da coluna no banco de dados
+      },
+    
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        field: 'updated_at', // nome da coluna no banco de dados
+      },
+
     },{
         tableName: 'users',
-        timestamps: false
+        timestamps: true
 });
