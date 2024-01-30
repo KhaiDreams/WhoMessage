@@ -26,7 +26,7 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 };
 
-//Diminuir quantidade de if's
+
 export const loginUser = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
@@ -105,7 +105,7 @@ export const listAllUsers = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params.id); // Converta para número aqui
+        const id = Number(req.params.id);
         const { email, username, description, profilepicture } = req.body;
 
         const user = await User.findByPk(id);
@@ -132,7 +132,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params.id); // Converta para número aqui
+        const id = Number(req.params.id);
 
         const deletedUser = await User.destroy({ where: { id } });
 
