@@ -14,7 +14,7 @@ React.js
 
 Banco de dados PostgreSQL (system use DBeaver)
 
-Optional: Postgress for testing API routes
+Optional: Postman for testing API routes
 ```
 
 ### 🔧 Installation
