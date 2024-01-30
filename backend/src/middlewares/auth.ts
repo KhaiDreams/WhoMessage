@@ -26,7 +26,6 @@ export async function AuthMiddleware(
         const data = verify(token, secret ?? '') as TokenPayload;
         const { id } = data;
         const user = await User.findByPk(id);
-        console.log('token', token);
 
         if (!user) {
             return res.status(401).json({ message: "Usuário não encontrado" });
