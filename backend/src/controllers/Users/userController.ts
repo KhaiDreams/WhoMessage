@@ -65,8 +65,10 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const listUserbyId = async (req: Request, res: Response) => {
     try {
-        const id = req.params._id;
-        const user = await User.findByPk(id);
+        const id = req.params.id;
+        const user = await User.findByPk(id, {
+            attributes: { exclude: ['email', 'password'] }
+        });
 
         if (user) {
             res.status(200).json({
