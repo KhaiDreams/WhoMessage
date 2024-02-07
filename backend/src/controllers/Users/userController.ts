@@ -5,7 +5,11 @@ import { User } from '../../models/Users/User';
 
 export const registerUser = async (req: Request, res: Response) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, idade } = req.body;
+
+        if (idade < 14 || idade > 99) {
+            return res.status(422).json({ message: "Você precisa ter a idade mínima para acessar o site" });
+        }
 
         const userExists = await User.findOne({ where: { email } });
 
@@ -17,6 +21,7 @@ export const registerUser = async (req: Request, res: Response) => {
             username,
             email,
             password: await bcrypt.hash(password, 12),
+            idade
         });
 
         res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser });
@@ -25,6 +30,7 @@ export const registerUser = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao registrar usuário.' });
     }
 };
+
 
 
 export const loginUser = async (req: Request, res: Response) => {
@@ -72,8 +78,7 @@ export const listUserbyId = async (req: Request, res: Response) => {
 
         if (user) {
             res.status(200).json({
-                user,
-                'message': 'Usuário encontrado'
+                user
             });
         } else {
             res.status(404).json({
@@ -125,10 +130,10 @@ export const updateUser = async (req: Request, res: Response) => {
             profilepicture,
         });
 
-        res.status(200).json({ user: updatedUser, message: "Usuário editado com sucesso" });
+        res.status(200).json({ user: updatedUser, message: "Perfil atualizado com sucesso" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro ao atualizar usuário.' });
+        res.status(500).json({ error: 'Erro ao atualizar perfil.' });
     }
 };
 
@@ -139,7 +144,7 @@ export const deleteUser = async (req: Request, res: Response) => {
         const deletedUser = await User.destroy({ where: { id } });
 
         if (deletedUser) {
-            res.status(200).json({ message: "Usuário removido com sucesso" });
+            res.status(200).json({ message: "Conta deletada com sucesso" });
         } else {
             res.status(404).json({ message: 'Usuário não encontrado' });
         }

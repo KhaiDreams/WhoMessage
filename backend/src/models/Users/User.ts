@@ -47,6 +47,21 @@ export const User = sequelize.define<UserInstance>('User',{
         defaultValue: true,
     },
 
+    idade: {
+        type: DataTypes.NUMBER,
+        allowNull: false,
+    },
+
+    isadmin: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+
+    ban: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
