@@ -15,6 +15,8 @@ npm (Node Package Manager)
 
 React.js
 
+TypeScript (soon)
+
 Banco de dados PostgreSQL (system use DBeaver)
 
 Optional: Postman for testing API routes
