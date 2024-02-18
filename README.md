@@ -33,11 +33,7 @@ cd WhoMessage
 Inside into project:
 
 ```
-npm init
-
 npm install
-
-npm run db:create
 
 npm run dev
 ```
