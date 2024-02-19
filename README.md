@@ -15,6 +15,8 @@ npm (Node Package Manager)
 
 React.js
 
+Next.js
+
 DataBase PostgreSQL (system use DBeaver)
 
 TypeScript (soon)
