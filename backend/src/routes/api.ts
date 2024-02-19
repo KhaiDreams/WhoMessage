@@ -5,11 +5,6 @@ import cors from 'cors';
 
 const router = Router();
 
-router.use(cors({
-    origin: 'http://resttesttest.com/',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-}));
-
 router.get('/health-check', (req, res) => {
     res.json({"health-check": true})
 });
