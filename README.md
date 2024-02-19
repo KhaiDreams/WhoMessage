@@ -44,7 +44,8 @@ npm run dev
 
 ## 🛠️ Frameworks
 
-* [Typescript](http://www.dropwizard.io/1.0.2/docs/](https://www.typescriptlang.org/docs/))
+* [Typescript](https://www.typescriptlang.org/docs/)
+* [Next.Js](https://nextjs.org/docs)
 
 ## 🖇️ Collaborating
 
