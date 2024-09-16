@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as ApiController from '../controllers/Users/userController';
 import { AuthMiddleware } from '../middlewares/auth';
-import cors from 'cors';
+import cors from 'cors'; //adicionar o cors futuramente
 
 const router = Router();
 
