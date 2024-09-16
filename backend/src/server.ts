@@ -12,7 +12,7 @@ server.use(cors({
 
 server.use('/', apiRouters);
 
-const PORT = process.env.PORT || 8480;
+const PORT = process.env.PORT;
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
