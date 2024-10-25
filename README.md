@@ -13,15 +13,11 @@ Node.js
 
 npm (Node Package Manager)
 
-React.js
-
 Next.js
 
 DataBase PostgreSQL (system use DBeaver)
 
-TypeScript (soon)
-
-Docker (soon)
+Backend with TypeScript
 
 Optional: Postman for testing API routes
 ```
