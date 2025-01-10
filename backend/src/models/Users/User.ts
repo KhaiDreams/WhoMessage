@@ -65,13 +65,13 @@ export const User = sequelize.define<UserInstance>('User',{
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
-        field: 'create_at', // nome da coluna no banco de dados
+        field: 'create_at',
       },
     
       updatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
-        field: 'updated_at', // nome da coluna no banco de dados
+        field: 'updated_at',
       },
 
     },{
