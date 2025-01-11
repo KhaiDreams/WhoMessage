@@ -178,19 +178,3 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params.id);
-
-        const deletedUser = await User.destroy({ where: { id } });
-
-        if (deletedUser) {
-            res.status(200).json({ message: "Conta deletada com sucesso" });
-        } else {
-            res.status(404).json({ message: 'Usuário não encontrado' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao excluir usuário' });
-    }
-};
