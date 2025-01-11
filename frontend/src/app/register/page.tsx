@@ -9,7 +9,6 @@ export default function Register() {
     email: "",
     password: "",
     username: "",
-    pfp: "",
     bio: "",
     age: "",
     nicknames: "",
