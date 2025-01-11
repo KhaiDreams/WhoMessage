@@ -6,7 +6,7 @@ const server = express();
 
 server.use(express.json());
 server.use(cors({
-    origin: 'http://localhost:4200',
+    origin: 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
 
