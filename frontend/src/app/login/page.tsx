@@ -30,7 +30,7 @@ export default function Login() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="p-3 border rounded w-full"
+            className="p-3 border rounded w-full text-black"
             required
           />
           <input
@@ -38,7 +38,7 @@ export default function Login() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="p-3 border rounded w-full"
+            className="p-3 border rounded w-full text-black"
             required
           />
           <button type="submit" className="p-2 bg-blue-500 text-white rounded">
