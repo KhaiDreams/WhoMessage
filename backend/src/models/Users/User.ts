@@ -1,80 +1,79 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../../database/db';
 
-export interface UserInstance extends Model{
+export interface UserInstance extends Model {
     id: number;
-    username: string;
     email: string;
-    password: string;
-    description: string;
-    profilepicture: string;
+    password_hash: string;
+    username: string;
+    pfp: string;
+    bio: string;
+    age: number;
+    nicknames: string[];
     active: Boolean;
+    is_admin: Boolean;
+    ban: Boolean;
 }
 
-export const User = sequelize.define<UserInstance>('User',{
+export const User = sequelize.define<UserInstance>('User', {
     id: {
         primaryKey: true,
         autoIncrement: true,
         type: DataTypes.INTEGER,
     },
-
-    username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-
     email: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
     },
-
-    password: {
+    password_hash: {
         type: DataTypes.STRING,
         allowNull: false,
     },
-
-    description: {
+    username: {
         type: DataTypes.STRING,
+        allowNull: false,
     },
-
-    profilepicture: {
-        type: DataTypes.STRING,
+    pfp: {
+        type: DataTypes.TEXT,
     },
-
+    bio: {
+        type: DataTypes.TEXT,
+    },
+    age: {
+        type: DataTypes.SMALLINT,
+        allowNull: false,
+        validate: {
+            min: 14,
+            max: 99,
+        },
+    },
+    nicknames: {
+        type: DataTypes.ARRAY(DataTypes.TEXT),
+    },
     active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
-
-    idade: {
-        type: DataTypes.NUMBER,
-        allowNull: false,
-    },
-
-    isadmin: {
+    is_admin: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
-
     ban: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
-
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
         field: 'create_at',
-      },
-    
-      updatedAt: {
+    },
+    updatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
         field: 'updated_at',
-      },
-
-    },{
-        tableName: 'users',
-        timestamps: true
+    },
+}, {
+    tableName: 'users',
+    timestamps: true
 });

@@ -2,26 +2,44 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
+import { Op } from 'sequelize';
 
 export const registerUser = async (req: Request, res: Response) => {
     try {
-        const { username, email, password, idade } = req.body;
+        const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
-        if (idade < 14 || idade > 99) {
+        if (age < 14 || age > 99) {
             return res.status(422).json({ message: "Você precisa ter a idade mínima para acessar o site" });
         }
 
         const userExists = await User.findOne({ where: { email } });
+        const usernameExists = await User.findOne({ where: { username } });
 
         if (userExists) {
             return res.status(422).json({ message: "Já existe um usuário com esse email!" });
         }
 
+        if (usernameExists) {
+            return res.status(422).json({ message: "Já existe um usuário com esse username!" });
+        }
+
+        if (!password) {
+            return res.status(422).json({ message: "Senha é obrigatória!" });
+        }
+
+        const password_hash = await bcrypt.hash(password, 12);
+
         const newUser = await User.create({
             username,
             email,
-            password: await bcrypt.hash(password, 12),
-            idade
+            password_hash,
+            age,
+            pfp,
+            bio,
+            nicknames,
+            active,
+            is_admin,
+            ban
         });
 
         res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser });
@@ -30,8 +48,6 @@ export const registerUser = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao registrar usuário.' });
     }
 };
-
-
 
 export const loginUser = async (req: Request, res: Response) => {
     try {
@@ -43,7 +59,7 @@ export const loginUser = async (req: Request, res: Response) => {
 
         const user = await User.findOne({ where: { email } });
 
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.status(404).json({ message: "Login incorreto!" });
         }
 
@@ -51,7 +67,7 @@ export const loginUser = async (req: Request, res: Response) => {
         const token = jwt.sign(
             { id: user.id },
             secret,
-            { expiresIn: 24 * 60 * 60 }
+            { expiresIn: 30 * 24 * 60 * 60 } // 1 month
         );
 
         return res.json({
@@ -66,14 +82,13 @@ export const loginUser = async (req: Request, res: Response) => {
         console.error(error);
         res.status(500).json({ 'error': 'Erro no login do usuário' });
     }
-}
-
+};
 
 export const listUserbyId = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         const user = await User.findByPk(id, {
-            attributes: { exclude: ['email', 'password'] }
+            attributes: { exclude: ['email', 'password_hash'] }
         });
 
         if (user) {
@@ -95,7 +110,7 @@ export const listUserbyId = async (req: Request, res: Response) => {
 export const listAllUsers = async (req: Request, res: Response) => {
     try {
         const users = await User.findAll({
-            attributes: { exclude: ['email', 'password'] }
+            attributes: { exclude: ['email', 'password_hash'] }
         });
 
         res.status(200).json({
@@ -109,11 +124,10 @@ export const listAllUsers = async (req: Request, res: Response) => {
     }
 };
 
-
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
-        const { email, username, description, profilepicture } = req.body;
+        const { email, username, pfp, bio, age, nicknames, active, is_admin, ban } = req.body;
 
         const user = await User.findByPk(id);
 
@@ -123,11 +137,28 @@ export const updateUser = async (req: Request, res: Response) => {
             });
         }
 
+        if (age && (age < 14 || age > 99)) {
+            return res.status(422).json({ message: "Você precisa ter a idade mínima para acessar o site" });
+        }
+
+        if (username) {
+            const usernameExists = await User.findOne({ where: { username, id: { [Op.ne]: id } } });
+
+            if (usernameExists) {
+                return res.status(422).json({ message: "Já existe um usuário com esse username!" });
+            }
+        }
+        
         const updatedUser = await user.update({
             email,
             username,
-            description,
-            profilepicture,
+            pfp,
+            bio,
+            age,
+            nicknames,
+            active,
+            is_admin,
+            ban
         });
 
         res.status(200).json({ user: updatedUser, message: "Perfil atualizado com sucesso" });
