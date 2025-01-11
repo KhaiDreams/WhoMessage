@@ -3,14 +3,33 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle login logic here
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+        router.push("/menu");
+      } else {
+        console.error("Login failed:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Failed to fetch:", error);
+    }
   };
 
   return (
@@ -46,7 +65,7 @@ export default function Login() {
           </button>
         </form>
         <Link href="/register" className="text-blue-500">
-        Não tem uma conta? Registre-se aqui
+          Não tem uma conta? Registre-se aqui
         </Link>
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
