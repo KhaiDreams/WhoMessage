@@ -63,6 +63,10 @@ export const loginUser = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Login incorreto!" });
         }
 
+        if (user.ban) {
+            return res.status(403).json({ message: "Usuário banido!" });
+        }
+
         const secret = process.env.SECRET ?? '';
         const token = jwt.sign(
             { id: user.id },
