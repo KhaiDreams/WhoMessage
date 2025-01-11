@@ -36,7 +36,7 @@ export const registerUser = async (req: Request, res: Response) => {
             age,
             pfp,
             bio,
-            nicknames,
+            nicknames: nicknames && nicknames.length > 0 ? nicknames : [username],
             active,
             is_admin,
             ban
@@ -159,7 +159,7 @@ export const updateUser = async (req: Request, res: Response) => {
             pfp,
             bio,
             age,
-            nicknames,
+            nicknames: nicknames && nicknames.length > 0 ? nicknames : [username],
             active,
             is_admin,
             ban
