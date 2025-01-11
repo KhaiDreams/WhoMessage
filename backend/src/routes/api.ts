@@ -4,10 +4,6 @@ import { AuthMiddleware } from '../middlewares/auth';
 
 const router = Router();
 
-router.get('/health-check', (req, res) => {
-    res.json({"health-check": true})
-});
-
 // Register - Login
 router.post('/auth/register', ApiController.registerUser);
 router.post('/auth/login', ApiController.loginUser);
@@ -16,6 +12,5 @@ router.post('/auth/login', ApiController.loginUser);
 router.get('/users/:id', AuthMiddleware, ApiController.listUserbyId);
 router.get('/users', AuthMiddleware, ApiController.listAllUsers);
 router.put('/users/:id', AuthMiddleware, ApiController.updateUser);
-router.delete('/users/:id', AuthMiddleware, ApiController.deleteUser);
 
 export default router;
