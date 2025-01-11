@@ -127,7 +127,7 @@ export const listAllUsers = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
-        const { email, username, pfp, bio, age, nicknames, active, is_admin, ban } = req.body;
+        const { email, username, password, pfp, bio, age, nicknames, active, is_admin, ban } = req.body;
 
         const user = await User.findByPk(id);
 
@@ -148,8 +148,8 @@ export const updateUser = async (req: Request, res: Response) => {
                 return res.status(422).json({ message: "Já existe um usuário com esse username!" });
             }
         }
-        
-        const updatedUser = await user.update({
+
+        const updatedData: any = {
             email,
             username,
             pfp,
@@ -159,7 +159,17 @@ export const updateUser = async (req: Request, res: Response) => {
             active,
             is_admin,
             ban
-        });
+        };
+
+        if (password) {
+            updatedData.password_hash = await bcrypt.hash(password, 12);
+        }
+
+        if (nicknames) {
+            updatedData.nicknames = Array.isArray(nicknames) ? nicknames : [nicknames];
+        }
+
+        const updatedUser = await user.update(updatedData);
 
         res.status(200).json({ user: updatedUser, message: "Perfil atualizado com sucesso" });
     } catch (error) {
