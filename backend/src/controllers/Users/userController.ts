@@ -4,7 +4,20 @@ import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
 import { Op } from 'sequelize';
 
-export const registerUser = async (req: Request, res: Response) => {
+interface UserRequestBody {
+    username: string;
+    email: string;
+    password: string;
+    age: number;
+    pfp?: string;
+    bio?: string;
+    nicknames?: string[];
+    active?: boolean;
+    is_admin?: boolean;
+    ban?: boolean;
+}
+
+export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: Response) => {
     try {
         const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
@@ -128,7 +141,7 @@ export const listAllUsers = async (req: Request, res: Response) => {
     }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: Request<{ id: string }, {}, UserRequestBody>, res: Response) => {
     try {
         const id = Number(req.params.id);
         const { email, username, password, pfp, bio, age, nicknames, active, is_admin, ban } = req.body;
@@ -153,7 +166,7 @@ export const updateUser = async (req: Request, res: Response) => {
             }
         }
 
-        const updatedData: any = {
+        const updatedData: Partial<UserRequestBody> & { password_hash?: string } = {
             email,
             username,
             pfp,
