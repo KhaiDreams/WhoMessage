@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -17,6 +18,8 @@ export default function Register() {
     ban: false,
   });
 
+  const router = useRouter();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -25,20 +28,40 @@ export default function Register() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle registration logic here
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          age: parseInt(formData.age, 10),
+          nicknames: formData.nicknames.split(",").map(nickname => nickname.trim())
+        }),
+      });
+      if (response.ok) {
+        console.log("Registration successful!");
+        router.push("/login");
+      } else {
+        console.error("Registration failed:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Failed to fetch:", error);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 sm:p-20">
-    <Image
-            className="white:invert"
-            src="/assets/logo-removebg-preview.png"
-            alt="WhoMessage Logo"
-            width={400}
-            height={40}
-            priority
+      <Image
+        className="white:invert"
+        src="/assets/logo-removebg-preview.png"
+        alt="WhoMessage Logo"
+        width={400}
+        height={40}
+        priority
       />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
         <input
@@ -47,7 +70,7 @@ export default function Register() {
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <input
@@ -56,7 +79,7 @@ export default function Register() {
           placeholder="Password"
           value={formData.password}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <input
@@ -65,7 +88,7 @@ export default function Register() {
           placeholder="Username (Ele será usado para te identificar)"
           value={formData.username}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <textarea
@@ -73,7 +96,7 @@ export default function Register() {
           placeholder="Bio"
           value={formData.bio}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <input
@@ -82,7 +105,7 @@ export default function Register() {
           placeholder="Age"
           value={formData.age}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <input
@@ -91,7 +114,7 @@ export default function Register() {
           placeholder="Nickname (Nome que as pessoas iram te chamar)"
           value={formData.nicknames}
           onChange={handleChange}
-          className="p-3 border rounded w-full"
+          className="p-3 border rounded w-full text-black"
           required
         />
         <button type="submit" className="p-2 bg-blue-500 text-white rounded">
