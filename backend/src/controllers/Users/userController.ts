@@ -22,7 +22,7 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
         const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
         if (age < 14 || age > 99) {
-            return res.status(422).json({ message: "Você precisa ter a idade mínima para acessar o site" });
+            return res.status(422).json({ message: "Você precisa ter a idade mínima de 14 anos para acessar o site" });
         }
 
         const userExists = await User.findOne({ where: { email } });
