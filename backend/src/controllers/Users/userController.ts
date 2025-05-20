@@ -21,15 +21,23 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
     try {
         const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
-        const errors = [
-            !password && "Senha é obrigatória!",
-            age < 14 || age > 99 && "Você precisa ter entre 14 e 99 anos para acessar o site",
-            await User.findOne({ where: { email } }) && "Já existe um usuário com esse email!",
-            await User.findOne({ where: { username } }) && "Já existe um usuário com esse username!"
-        ].filter(Boolean);
+        if (age < 14 || age > 99) {
+            return res.status(422).json({ message: "Você precisa ter a idade mínima de 14 anos para acessar o site" });
+        }
 
-        if (errors.length > 0) {
-            return res.status(422).json({ message: errors[0] });
+        const userExists = await User.findOne({ where: { email } });
+        const usernameExists = await User.findOne({ where: { username } });
+
+        if (userExists) {
+            return res.status(422).json({ message: "Já existe um usuário com esse email!" });
+        }
+
+        if (usernameExists) {
+            return res.status(422).json({ message: "Já existe um usuário com esse username!" });
+        }
+
+        if (!password) {
+            return res.status(422).json({ message: "Senha é obrigatória!" });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
@@ -41,16 +49,16 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             age,
             pfp,
             bio,
-            nicknames: nicknames?.length ? nicknames : [username],
+            nicknames: nicknames && nicknames.length > 0 ? nicknames : [username],
             active,
             is_admin,
             ban
         });
 
-        return res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser });
+        res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Erro ao registrar usuário.' });
+        res.status(500).json({ error: 'Erro ao registrar usuário.' });
     }
 };
 
