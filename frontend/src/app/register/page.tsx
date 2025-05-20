@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { apiFetch } from "@/lib/api";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -31,7 +32,7 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,14 +43,8 @@ export default function Register() {
           nicknames: formData.nicknames.split(",").map(nickname => nickname.trim())
         }),
       });
-      if (response.ok) {
-        console.log("Registration successful!");
-        router.push("/login");
-      } else {
-        console.error("Registration failed:", response.statusText);
-      }
+      router.push("/login");
     } catch (error) {
-      console.error("Failed to fetch:", error);
     }
   };
 

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -13,22 +14,17 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const data = await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("token", data.token);
-        router.push("/menu");
-      } else {
-        console.error("Login failed:", response.statusText);
-      }
+
+      localStorage.setItem("token", data.token);
+      router.push("/menu");
     } catch (error) {
-      console.error("Failed to fetch:", error);
     }
   };
 
@@ -68,8 +64,7 @@ export default function Login() {
           Não tem uma conta? Registre-se aqui
         </Link>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-      </footer>
+      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
     </div>
   );
 }
