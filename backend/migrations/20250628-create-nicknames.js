@@ -17,19 +17,24 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       psn: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       xbox: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       steam: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       epic_games: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       riot: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       }
     });
   },
