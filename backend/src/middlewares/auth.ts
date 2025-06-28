@@ -2,6 +2,14 @@ import { verify } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
 import { User } from '../models/Users/User';
 
+declare global {
+  namespace Express {
+    interface Request {
+      userId: string;
+    }
+  }
+}
+
 interface TokenPayload {
     id: string;
     iat: number;
@@ -37,3 +45,5 @@ export async function AuthMiddleware(
         return res.status(401).json({ message: "Token inválido" });
     }
 }
+
+export default AuthMiddleware;
