@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon -e ts,json --files src/server.ts"
+    "dev": "nodemon -e ts,json --files src/server.ts",
+    "migrate": "sequelize-cli db:migrate --config src/database/config.js --migrations-path migrations",
+    "migrate:undo": "sequelize-cli db:migrate:undo --config src/database/config.js --migrations-path migrations"
   },
   "author": "KhaiDreams",
   "license": "ISC",
