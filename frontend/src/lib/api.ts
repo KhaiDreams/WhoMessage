@@ -34,3 +34,30 @@ export async function apiFetch<T = any>(
     throw err;
   }
 }
+
+function getToken() {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
+}
+
+function withApiUrl(url: string) {
+  if (url.startsWith('http')) return url;
+  return `${process.env.NEXT_PUBLIC_API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+const api = {
+  get: (url: string, options: RequestInit = {}) => {
+    const token = getToken();
+    const headers = token ? { ...options.headers, Authorization: `Bearer ${token}` } : options.headers;
+    return apiFetch(withApiUrl(url), { ...options, method: 'GET', headers });
+  },
+  post: (url: string, body?: any, options: RequestInit = {}) => {
+    const token = getToken();
+    const headers = token ? { ...options.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { ...options.headers, 'Content-Type': 'application/json' };
+    return apiFetch(withApiUrl(url), { ...options, method: 'POST', headers, body: JSON.stringify(body) });
+  }
+};
+
+export default api;
