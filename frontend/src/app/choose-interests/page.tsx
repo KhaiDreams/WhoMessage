@@ -28,7 +28,7 @@ export default function ChooseInterests() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <main className="flex flex-col gap-8 items-center w-full max-w-md bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
+      <main className="flex flex-col gap-8 items-center w-full max-w-4xl bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
         <Image
           className="white:invert mb-2"
           src="/assets/logo-removebg-preview.png"
@@ -38,7 +38,7 @@ export default function ChooseInterests() {
           priority
         />
         <h1 className="text-2xl font-bold text-foreground mb-2 text-center">Escolha seus interesses</h1>
-        <div className="grid grid-cols-2 gap-3 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
           {(Array.isArray(interests) ? interests : []).map(tag => {
             const isSelected = selected.includes(tag.id);
             return (
@@ -46,13 +46,13 @@ export default function ChooseInterests() {
                 key={tag.id}
                 type="button"
                 onClick={() => handleSelect(tag.id)}
-                className={`px-4 py-3 rounded-xl font-semibold border-2 transition-all duration-200 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:z-10
+                className={`flex flex-col items-start px-6 py-4 min-h-[64px] rounded-2xl font-semibold border-2 transition-all duration-200 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 whitespace-normal
                   ${isSelected
                     ? 'bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 border-primary text-white scale-105 shadow-2xl'
                     : 'bg-input-bg border-input-border text-foreground hover:bg-card hover:border-primary/60 hover:scale-105'}
                 `}
               >
-                {tag.name}
+                <span className="text-lg font-semibold">{tag.name}</span>
               </button>
             );
           })}

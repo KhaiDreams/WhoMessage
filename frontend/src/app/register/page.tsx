@@ -69,7 +69,7 @@ export default function Register() {
             placeholder="Nome de usuário"
             value={formData.username}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <input
@@ -78,7 +78,7 @@ export default function Register() {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <input
@@ -87,7 +87,7 @@ export default function Register() {
             placeholder="Senha"
             value={formData.password}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <input
@@ -96,7 +96,7 @@ export default function Register() {
             placeholder="Idade"
             value={formData.age}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <textarea
@@ -104,7 +104,7 @@ export default function Register() {
             placeholder="Bio (opcional)"
             value={formData.bio}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             rows={3}
           />
           <button

@@ -59,7 +59,7 @@ export default function Login() {
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <input
@@ -67,7 +67,7 @@ export default function Login() {
             placeholder="Senha"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <button
