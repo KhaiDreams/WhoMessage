@@ -1,8 +1,20 @@
+import Image from 'next/image';
+
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-900 to-green-500">
-      <h1 className="text-4xl font-bold text-white mb-6">Bem-vindo ao WhoMessage!</h1>
-      <p className="text-white text-lg">Aqui será o seu feed estilo Tinder para gamers. (Em breve!)</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <main className="flex flex-col gap-8 items-center w-full max-w-md bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
+        <Image
+          className="white:invert mb-2"
+          src="/assets/logo-removebg-preview.png"
+          alt="WhoMessage Logo"
+          width={220}
+          height={40}
+          priority
+        />
+        <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Bem-vindo ao WhoMessage!</h1>
+        <p className="text-foreground/80 text-lg text-center">Aqui será o seu feed estilo Tinder para gamers.<br/>(Em breve!)</p>
+      </main>
     </div>
   );
 }

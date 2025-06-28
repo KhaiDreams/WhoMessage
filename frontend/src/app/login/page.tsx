@@ -43,42 +43,48 @@ export default function Login() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <main className="flex flex-col gap-8 items-center w-full max-w-md bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
         <Image
-          className="white:invert"
+          className="white:invert mb-2"
           src="/assets/logo-removebg-preview.png"
           alt="WhoMessage Logo"
-          width={400}
+          width={220}
           height={40}
           priority
         />
-        <form onSubmit={handleLogin} className="flex flex-col gap-5 w-full max-w-md">
+        <form onSubmit={handleLogin} className="flex flex-col gap-5 w-full">
           <input
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="p-3 border rounded w-full text-black"
+            onChange={e => setEmail(e.target.value)}
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Senha"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="p-3 border rounded w-full text-black"
+            onChange={e => setPassword(e.target.value)}
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-[color:var(--input-text)] placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
             required
           />
-          <button type="submit" className="p-2 bg-blue-500 text-white rounded">
-            Login
+          <button
+            type="submit"
+            className="w-full py-3 rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transition-all duration-200 ease-in-out tracking-wide text-lg border-none outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="inline-block"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+              Entrar
+            </span>
           </button>
         </form>
-        <Link href="/register" className="text-blue-500">
-          Não tem uma conta? Registre-se aqui
-        </Link>
+        <p className="text-sm text-foreground/70 text-center mt-2">
+          Não tem uma conta?{' '}
+          <Link href="/register" className="text-primary hover:underline font-semibold transition-colors">Cadastre-se</Link>
+        </p>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center"></footer>
     </div>
   );
 }
