@@ -19,6 +19,9 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Whomessage",
   description: "Social Media for Gamers",
+  icons: {
+    icon: "/assets/logo-removebg-preview.png", // Colocar uma visão melhorada do logo
+  },
 };
 
 export default function RootLayout({
