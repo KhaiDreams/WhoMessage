@@ -13,7 +13,9 @@ export default function Home() {
           priority
         />
         <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Bem-vindo ao WhoMessage!</h1>
-        <p className="text-foreground/80 text-lg text-center">Aqui será o seu feed estilo Tinder para gamers.<br/>(Em breve!)</p>
+        <p className="text-foreground/80 text-lg text-center">Aqui será o seu feed estilo "Swipe" para gamers.<br/>(Em breve!)</p>
+        <p className="text-foreground/80 text-lg text-center">Precisamos de mais usuários para enfim lançarmos o aplicativo</p>
+        <p className="text-foreground/80 text-lg text-center">Logo na playstore!</p>
       </main>
     </div>
   );
