@@ -16,6 +16,12 @@ module.exports = {
         references: { model: 'users', key: 'id' },
         onDelete: 'CASCADE'
       },
+      pre_tag_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: 'pre_tags_games', key: 'id' },
+        onDelete: 'CASCADE'
+      },
       name: {
         type: Sequelize.ARRAY(Sequelize.STRING),
         allowNull: false
