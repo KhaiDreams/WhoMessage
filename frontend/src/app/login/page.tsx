@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import api from '@/lib/api';
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,7 +24,20 @@ export default function Login() {
       });
 
       localStorage.setItem("token", data.token);
-      router.push("/menu");
+
+      // Após login bem-sucedido:
+      // Verifica se usuário já tem tags
+      const userHasTags = await api.get('/api/tags/interests-user');
+      if (!userHasTags || !userHasTags.name || userHasTags.name.length < 3) {
+        router.push('/choose-interests');
+      } else {
+        const userHasGames = await api.get('/api/tags/games-user');
+        if (!userHasGames || !userHasGames.name || userHasGames.name.length < 3) {
+          router.push('/choose-games');
+        } else {
+          router.push('/home');
+        }
+      }
     } catch (error) {
     }
   };

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { apiFetch } from "@/lib/api";
+import api from "@/lib/api";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -32,18 +32,21 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          age: parseInt(formData.age, 10),
-          nicknames: formData.nicknames.split(",").map(nickname => nickname.trim())
-        }),
+      const res = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        email: formData.email,
+        password: formData.password,
+        username: formData.username,
+        bio: formData.bio,
+        age: formData.age,
+        nicknames: formData.nicknames,
+        active: formData.active,
+        is_admin: formData.is_admin,
+        ban: formData.ban,
       });
-      router.push("/login");
+      if (res.token) {
+        localStorage.setItem('token', res.token);
+      }
+      router.push('/choose-interests');
     } catch (error) {
     }
   };
