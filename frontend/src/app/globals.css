@@ -3,15 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #111217;
+  --foreground: #e5e7eb;
+  --card: #181a20;
+  --card-border: #23242a;
+  --primary: #6366f1;
+  --primary-dark: #3730a3;
+  --accent: #a21caf;
+  --input-bg: #23242a;
+  --input-border: #33343a;
+  --input-placeholder: #888;
+  --input-text: #181a20;
 }
 
 body {
