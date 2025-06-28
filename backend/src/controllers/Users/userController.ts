@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
-import { Op } from 'sequelize';
 
 interface UserRequestBody {
     username: string;
@@ -49,13 +48,19 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             age,
             pfp,
             bio,
-            nicknames: nicknames && nicknames.length > 0 ? nicknames : [username],
+            nicknames: Array.isArray(nicknames) ? nicknames : [nicknames ?? username],
             active,
             is_admin,
             ban
         });
 
-        res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser });
+        const token = jwt.sign(
+            { id: newUser.id },
+            process.env.SECRET ?? '',
+            { expiresIn: 30 * 24 * 60 * 60 }
+        );
+
+        res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser, token });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao registrar usuário.' });

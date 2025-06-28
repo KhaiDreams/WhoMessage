@@ -23,18 +23,23 @@ export const Nicknames = sequelize.define<NicknamesInstance>('Nicknames', {
   },
   psn: {
     type: DataTypes.STRING,
+    unique: true
   },
   xbox: {
     type: DataTypes.STRING,
+    unique: true
   },
   steam: {
     type: DataTypes.STRING,
+    unique: true
   },
   epic_games: {
     type: DataTypes.STRING,
+    unique: true
   },
   riot: {
     type: DataTypes.STRING,
+    unique: true
   }
 }, {
   tableName: 'nicknames',
