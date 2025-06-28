@@ -82,3 +82,23 @@ export const getAllTagsGames = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch games', details: err });
     }
 };
+
+export const getUserTagsInterests = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const tag = await TagsInterests.findOne({ where: { user_id: userId } });
+        res.json(tag || {});
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user interests', details: err });
+    }
+};
+
+export const getUserTagsGames = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const tag = await TagsGames.findOne({ where: { user_id: userId } });
+        res.json(tag || {});
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user games', details: err });
+    }
+};

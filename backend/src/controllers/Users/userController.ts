@@ -141,57 +141,33 @@ export const listAllUsers = async (req: Request, res: Response) => {
     }
 };
 
-export const updateUser = async (req: Request<{ id: string }, {}, UserRequestBody>, res: Response) => {
+export const updateUser = async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params.id);
-        const { email, username, password, pfp, bio, age, nicknames, active, is_admin, ban } = req.body;
-
-        const user = await User.findByPk(id);
-
+        const userId = req.userId;
+        const paramId = req.params.id;
+        // userId pode ser string ou number, paramId é string
+        if (String(userId) !== String(paramId)) {
+            return res.status(403).json({ message: 'Você só pode atualizar o seu próprio perfil.' });
+        }
+        const { username, email, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
+        const user = await User.findByPk(userId);
         if (!user) {
-            return res.status(404).json({
-                message: 'Usuário não encontrado',
-            });
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
-
-        if (age && (age < 14 || age > 99)) {
-            return res.status(422).json({ message: "Você precisa ter a idade mínima para acessar o site" });
-        }
-
-        if (username) {
-            const usernameExists = await User.findOne({ where: { username, id: { [Op.ne]: id } } });
-
-            if (usernameExists) {
-                return res.status(422).json({ message: "Já existe um usuário com esse username!" });
-            }
-        }
-
-        const updatedData: Partial<UserRequestBody> & { password_hash?: string } = {
-            email,
-            username,
-            pfp,
-            bio,
-            age,
-            nicknames: nicknames && nicknames.length > 0 ? nicknames : [username],
-            active,
-            is_admin,
-            ban
-        };
-
-        if (password) {
-            updatedData.password_hash = await bcrypt.hash(password, 12);
-        }
-
-        if (nicknames) {
-            updatedData.nicknames = Array.isArray(nicknames) ? nicknames : [nicknames];
-        }
-
-        const updatedUser = await user.update(updatedData);
-
-        res.status(200).json({ user: updatedUser, message: "Perfil atualizado com sucesso" });
+        // Atualiza apenas os campos permitidos
+        user.username = username ?? user.username;
+        user.email = email ?? user.email;
+        user.age = age ?? user.age;
+        user.pfp = pfp ?? user.pfp;
+        user.bio = bio ?? user.bio;
+        user.nicknames = nicknames ?? user.nicknames;
+        user.active = active ?? user.active;
+        user.is_admin = is_admin ?? user.is_admin;
+        user.ban = ban ?? user.ban;
+        await user.save();
+        res.json({ message: 'Perfil atualizado com sucesso.', user });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao atualizar perfil.' });
+        res.status(500).json({ message: 'Erro ao atualizar perfil.', error });
     }
 };
 
