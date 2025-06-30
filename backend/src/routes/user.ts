@@ -12,5 +12,6 @@ router.post('/auth/login', ApiController.loginUser);
 router.get('/users/:id', AuthMiddleware, ApiController.listUserbyId);
 router.get('/users', AuthMiddleware, ApiController.listAllUsers);
 router.put('/users/:id', AuthMiddleware, ApiController.updateUser);
+router.post('/users/nicknames', AuthMiddleware, ApiController.addNicknames);
 
 export default router;

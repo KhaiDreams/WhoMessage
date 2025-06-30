@@ -48,10 +48,10 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             age,
             pfp,
             bio,
-            nicknames: Array.isArray(nicknames) ? nicknames : [nicknames ?? username],
-            active,
-            is_admin,
-            ban
+            nicknames: Array.isArray(nicknames) ? nicknames : (nicknames ? [nicknames] : [username]),
+            active: active ?? true,
+            is_admin: is_admin ?? false,
+            ban: ban ?? false
         });
 
         const token = jwt.sign(
@@ -165,7 +165,17 @@ export const updateUser = async (req: Request, res: Response) => {
         user.age = age ?? user.age;
         user.pfp = pfp ?? user.pfp;
         user.bio = bio ?? user.bio;
-        user.nicknames = nicknames ?? user.nicknames;
+        
+        // Lógica especial para nicknames: mantém os existentes e adiciona novos
+        if (nicknames) {
+            const currentNicknames = user.nicknames || [];
+            const newNicknames = Array.isArray(nicknames) ? nicknames : [nicknames];
+            
+            // Adiciona apenas nicknames que não existem ainda
+            const uniqueNicknames = [...new Set([...currentNicknames, ...newNicknames])];
+            user.nicknames = uniqueNicknames;
+        }
+        
         user.active = active ?? user.active;
         user.is_admin = is_admin ?? user.is_admin;
         user.ban = ban ?? user.ban;
@@ -173,6 +183,44 @@ export const updateUser = async (req: Request, res: Response) => {
         res.json({ message: 'Perfil atualizado com sucesso.', user });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao atualizar perfil.', error });
+    }
+};
+
+export const addNicknames = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const { nicknames } = req.body;
+
+        if (!nicknames) {
+            return res.status(400).json({ message: 'Nicknames são obrigatórios.' });
+        }
+
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        const currentNicknames = user.nicknames || [];
+        const newNicknames = Array.isArray(nicknames) ? nicknames : [nicknames];
+        
+        // Remove espaços em branco e filtra nicknames vazios
+        const cleanNicknames = newNicknames
+            .map(nick => nick.trim())
+            .filter(nick => nick.length > 0);
+
+        // Adiciona apenas nicknames que não existem ainda
+        const uniqueNicknames = [...new Set([...currentNicknames, ...cleanNicknames])];
+        
+        user.nicknames = uniqueNicknames;
+        await user.save();
+
+        res.json({ 
+            message: 'Nicknames adicionados com sucesso.', 
+            nicknames: user.nicknames 
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erro ao adicionar nicknames.', error });
     }
 };
 

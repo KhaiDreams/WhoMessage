@@ -3,23 +3,47 @@
 @tailwind utilities;
 
 :root {
-  --background: #111217;
-  --foreground: #e5e7eb;
-  --card: #181a20;
-  --card-border: #23242a;
+  --background: #0a0b0f;
+  --foreground: #f8fafc;
+  --card: #0f1419;
+  --card-border: #1a1d23;
   --primary: #6366f1;
   --primary-dark: #3730a3;
   --accent: #a21caf;
-  --input-bg: #23242a;
-  --input-border: #33343a;
-  --input-placeholder: #888;
-  --input-text: #181a20;
+  --input-bg: #1a1d23;
+  --input-border: #2a2d35;
+  --input-placeholder: #6b7280;
+  --input-text: #f8fafc;
+  --input-focus: #374151;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(162, 28, 175, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(99, 102, 241, 0.03) 0%, transparent 50%);
+  min-height: 100vh;
+}
+
+/* Estilo para inputs com tema escuro aprimorado */
+.dark-input {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+  transition: all 0.2s ease-in-out;
+}
+
+.dark-input:focus {
+  background-color: var(--input-focus);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.dark-input::placeholder {
+  color: var(--input-placeholder);
 }
 
 @layer utilities {

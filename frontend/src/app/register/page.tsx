@@ -13,7 +13,7 @@ export default function Register() {
     username: "",
     bio: "",
     age: "",
-    nicknames: "",
+    nickname: "", // Nickname atual/ativo
     active: true,
     is_admin: false,
     ban: false,
@@ -32,13 +32,16 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
+      // Se o usuário não definiu um nickname, usar o username como padrão
+      const nicknameToUse = formData.nickname.trim() || formData.username;
+
       const res = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         email: formData.email,
         password: formData.password,
         username: formData.username,
         bio: formData.bio,
-        age: formData.age,
-        nicknames: formData.nicknames,
+        age: parseInt(formData.age),
+        nicknames: [nicknameToUse],
         active: formData.active,
         is_admin: formData.is_admin,
         ban: formData.ban,
@@ -66,10 +69,10 @@ export default function Register() {
           <input
             type="text"
             name="username"
-            placeholder="Nome de usuário"
+            placeholder="Nome de usuário (único)"
             value={formData.username}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
           <input
@@ -78,7 +81,7 @@ export default function Register() {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
           <input
@@ -87,7 +90,7 @@ export default function Register() {
             placeholder="Senha"
             value={formData.password}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
           <input
@@ -96,15 +99,26 @@ export default function Register() {
             placeholder="Idade"
             value={formData.age}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
+          
+          {/* Campo de Nickname */}
+          <input
+            type="text"
+            name="nickname"
+            placeholder="Como as pessoas vão te chamar"
+            value={formData.nickname}
+            onChange={handleChange}
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
+          />
+
           <textarea
             name="bio"
             placeholder="Bio (opcional)"
             value={formData.bio}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200 resize-none"
             rows={3}
           />
           <button
