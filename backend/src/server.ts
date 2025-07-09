@@ -8,9 +8,14 @@ import cors from 'cors';
 const server = express();
 
 server.use(express.json());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://who-message.vercel.app'
+];
 server.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 }));
 
 server.use('/', apiRouters);
