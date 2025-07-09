@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import apiRouters from './routes/user';
 import tagsRouters from './routes/tags';
+import feedbackRoutes from './routes/feedback';
+import meRoutes from './routes/me';
 import cors from 'cors';
 
 const server = express();
@@ -13,6 +15,8 @@ server.use(cors({
 
 server.use('/', apiRouters);
 server.use('/api', tagsRouters);
+server.use('/api/feedback', feedbackRoutes);
+server.use('/api/user/me', meRoutes);
 
 const PORT = process.env.PORT;
 server.listen(PORT, () => {
