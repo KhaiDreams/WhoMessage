@@ -20,8 +20,33 @@ export const metadata: Metadata = {
   title: "Whomessage",
   description: "Social Media for Gamers",
   icons: {
-    icon: "/assets/logo-removebg-preview.png", // Colocar uma visão melhorada do logo
+    icon: [
+      { url: "/assets/logo-removebg-preview.png", type: "image/png", sizes: "any" },
+      { url: "/favicon.ico", type: "image/x-icon" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/assets/logo-removebg-preview.png"
   },
+  openGraph: {
+    title: "Whomessage",
+    description: "Social Media for Gamers",
+    images: [
+      {
+        url: "/assets/logo-removebg-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "WhoMessage Logo"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Whomessage",
+    description: "Social Media for Gamers",
+    images: [
+      "/assets/logo-removebg-preview.png"
+    ]
+  }
 };
 
 export default function RootLayout({
