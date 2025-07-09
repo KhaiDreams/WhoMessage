@@ -10,7 +10,7 @@ const server = express();
 server.use(express.json());
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://who-message.vercel.app'
+  'https://whomessage.vercel.app'
 ];
 server.use(cors({
   origin: allowedOrigins,
