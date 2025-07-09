@@ -24,6 +24,10 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             return res.status(422).json({ message: "Você precisa ter a idade mínima de 14 anos para acessar o site" });
         }
 
+        if (bio && bio.length > 300) {
+            return res.status(422).json({ message: "A descrição (bio) não pode ter mais que 300 caracteres." });
+        }
+
         const userExists = await User.findOne({ where: { email } });
         const usernameExists = await User.findOne({ where: { username } });
 
@@ -37,6 +41,15 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
 
         if (!password) {
             return res.status(422).json({ message: "Senha é obrigatória!" });
+        }
+
+        // Validação de senha forte
+        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+        if (password.length < 8) {
+            return res.status(422).json({ message: "A senha deve ter pelo menos 8 caracteres." });
+        }
+        if (!strongRegex.test(password)) {
+            return res.status(422).json({ message: "A senha deve conter maiúscula, minúscula, número e caractere especial." });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
@@ -155,6 +168,9 @@ export const updateUser = async (req: Request, res: Response) => {
             return res.status(403).json({ message: 'Você só pode atualizar o seu próprio perfil.' });
         }
         const { username, email, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
+        if (bio && bio.length > 300) {
+            return res.status(422).json({ message: "A descrição (bio) não pode ter mais que 300 caracteres." });
+        }
         const user = await User.findByPk(userId);
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
@@ -170,7 +186,6 @@ export const updateUser = async (req: Request, res: Response) => {
         if (nicknames) {
             const currentNicknames = user.nicknames || [];
             const newNicknames = Array.isArray(nicknames) ? nicknames : [nicknames];
-            
             // Adiciona apenas nicknames que não existem ainda
             const uniqueNicknames = [...new Set([...currentNicknames, ...newNicknames])];
             user.nicknames = uniqueNicknames;
