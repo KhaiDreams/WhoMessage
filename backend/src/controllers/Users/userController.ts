@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
+import { Op } from 'sequelize';
 
 interface UserRequestBody {
     username: string;
@@ -44,12 +45,12 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
         }
 
         // Validação de senha forte
-        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+        const strongRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
         if (password.length < 8) {
             return res.status(422).json({ message: "A senha deve ter pelo menos 8 caracteres." });
         }
         if (!strongRegex.test(password)) {
-            return res.status(422).json({ message: "A senha deve conter maiúscula, minúscula, número e caractere especial." });
+            return res.status(422).json({ message: "A senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial." });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
@@ -82,13 +83,21 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
 
 export const loginUser = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const { login, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(422).json({ message: "E-mail e senha são obrigatórios!" });
+        if (!login || !password) {
+            return res.status(422).json({ message: "email/username e senha são obrigatórios!" });
         }
 
-        const user = await User.findOne({ where: { email } });
+        // Busca por email ou username
+        const user = await User.findOne({
+            where: {
+                [Op.or]: [
+                    { email: login },
+                    { username: login }
+                ]
+            }
+        });
 
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.status(404).json({ message: "Login incorreto!" });

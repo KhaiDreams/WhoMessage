@@ -9,6 +9,7 @@ export default function ChooseInterests() {
   const [interests, setInterests] = useState<any[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -16,14 +17,47 @@ export default function ChooseInterests() {
   }, []);
 
   const handleSelect = (id: number) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setError(null);
+    setSelected(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(i => i !== id);
+      } else {
+        // Não seta erro aqui, deixa o useEffect cuidar disso
+        if (prev.length >= 10) {
+          return prev;
+        }
+        return [...prev, id];
+      }
+    });
   };
 
+  // Exibe erro ao atingir o máximo de interesses
+  useEffect(() => {
+    if (selected.length === 10) {
+      setError('Você só pode selecionar até 10 interesses.');
+    } else if (error && selected.length < 10) {
+      setError(null);
+    }
+  }, [selected.length]);
+
   const handleSubmit = async () => {
-    if (selected.length < 3 || selected.length > 10) return;
+    if (selected.length < 3) {
+      setError('Selecione pelo menos 3 interesses.');
+      return;
+    }
+    if (selected.length > 10) {
+      setError('Você só pode selecionar até 10 interesses.');
+      return;
+    }
     setLoading(true);
-    await api.post('/api/tags/interests', { pre_tag_ids: selected });
-    router.push('/choose-games');
+    try {
+      await api.post('/api/tags/interests', { pre_tag_ids: selected });
+      router.push('/choose-games');
+    } catch (e) {
+      setError('Erro ao salvar interesses. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,12 +85,17 @@ export default function ChooseInterests() {
                     ? 'bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 border-primary text-white scale-105 shadow-2xl'
                     : 'bg-input-bg border-input-border text-foreground hover:bg-card hover:border-primary/60 hover:scale-105'}
                 `}
+                aria-pressed={isSelected}
+                disabled={!isSelected && selected.length >= 10}
               >
                 <span className="text-lg font-semibold">{tag.name}</span>
               </button>
             );
           })}
         </div>
+        {error && (
+          <div className="w-full text-center text-red-600 font-semibold mt-2 animate-pulse">{error}</div>
+        )}
         <button
           onClick={handleSubmit}
           disabled={selected.length < 3 || selected.length > 10 || loading}

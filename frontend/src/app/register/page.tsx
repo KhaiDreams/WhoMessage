@@ -19,6 +19,8 @@ export default function Register() {
     ban: false,
   });
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [bioError, setBioError] = useState("");
   const [isBioFocused, setIsBioFocused] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -142,30 +144,60 @@ export default function Register() {
             className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Senha"
-            value={formData.password}
-            onChange={handleChange}
-            onFocus={() => setIsTypingPassword(true)}
-            onBlur={() => setIsTypingPassword(false)}
-            className={`px-4 py-3 rounded-lg bg-input-bg border ${passwordError ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200`}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirme a senha"
-            value={confirmPassword}
-            onChange={handleConfirmPasswordChange}
-            className={`px-4 py-3 rounded-lg bg-input-bg border ${confirmPasswordError ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200`}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
+          <div className="relative w-full">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Senha"
+              value={formData.password}
+              onChange={handleChange}
+              onFocus={() => setIsTypingPassword(true)}
+              onBlur={() => setIsTypingPassword(false)}
+              className={`px-4 py-3 pr-12 rounded-lg bg-input-bg border ${passwordError ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200 w-full`}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary focus:outline-none"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4.03-9-7 0-1.13.47-2.36 1.32-3.54m2.1-2.38C7.7 5.7 9.76 5 12 5c5 0 9 4.03 9 7 0 1.13-.47 2.36-1.32 3.54-.36.5-.78.98-1.25 1.43M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2" /></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              )}
+            </button>
+          </div>
+          <div className="relative w-full">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirme a senha"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              className={`px-4 py-3 pr-12 rounded-lg bg-input-bg border ${confirmPasswordError ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200 w-full`}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary focus:outline-none"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+            >
+              {showConfirmPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4.03-9-7 0-1.13.47-2.36 1.32-3.54m2.1-2.38C7.7 5.7 9.76 5 12 5c5 0 9 4.03 9 7 0 1.13-.47 2.36-1.32 3.54-.36.5-.78.98-1.25 1.43M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2" /></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              )}
+            </button>
+          </div>
           {(passwordStrength || passwordError || confirmPasswordError || (isTypingPassword && passwordStrength !== 'forte') || (!confirmPasswordError && confirmPassword)) && (
             <div className="flex flex-col gap-1">
               {(passwordStrength || passwordError) && (

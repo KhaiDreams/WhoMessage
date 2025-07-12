@@ -11,6 +11,7 @@ export default function ChooseGames() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
   const pageSize = 12;
   const router = useRouter();
 
@@ -19,14 +20,47 @@ export default function ChooseGames() {
   }, []);
 
   const handleSelect = (id: number) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setError(null);
+    setSelected(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(i => i !== id);
+      } else {
+        // Don't set error here, let useEffect handle it for consistency
+        if (prev.length >= 20) {
+          return prev;
+        }
+        return [...prev, id];
+      }
+    });
   };
 
+  // Show error if user reaches the max selection
+  useEffect(() => {
+    if (selected.length === 20) {
+      setError('Você só pode selecionar até 20 jogos.');
+    } else if (error && selected.length < 20) {
+      setError(null);
+    }
+  }, [selected.length]);
+
   const handleSubmit = async () => {
-    if (selected.length < 3 || selected.length > 20) return;
+    if (selected.length < 3) {
+      setError('Selecione pelo menos 3 jogos.');
+      return;
+    }
+    if (selected.length > 20) {
+      setError('Você só pode selecionar até 20 jogos.');
+      return;
+    }
     setLoading(true);
-    await api.post('/api/tags/games', { pre_tag_ids: selected });
-    router.push('/home');
+    try {
+      await api.post('/api/tags/games', { pre_tag_ids: selected });
+      router.push('/home');
+    } catch (e) {
+      setError('Erro ao salvar jogos. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Filtragem e paginação
@@ -100,6 +134,8 @@ export default function ChooseGames() {
                 className={`group relative flex flex-col items-center justify-between px-4 py-5 min-h-[180px] rounded-3xl font-semibold border-0 transition-all duration-200 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-accent focus:z-10 bg-gradient-to-br from-[#23243a] to-[#181a20] hover:scale-[1.03] hover:shadow-2xl overflow-hidden
                   ${isSelected ? 'ring-4 ring-pink-600 scale-105' : ''}
                 `}
+                aria-pressed={isSelected}
+                disabled={!isSelected && selected.length >= 20}
               >
                 <div className="w-full flex flex-col items-center mb-2">
                   {game.image && (
@@ -117,6 +153,9 @@ export default function ChooseGames() {
             );
           })}
         </div>
+        {error && (
+          <div className="w-full text-center text-red-600 font-semibold mt-2 animate-pulse">{error}</div>
+        )}
         <button
           onClick={handleSubmit}
           disabled={selected.length < 3 || selected.length > 20 || loading}
