@@ -25,7 +25,7 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         // Atualiza ou cria único registro por usuário
         const [tag, created] = await TagsInterests.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names, pre_tag_id: null }
+            defaults: { name: names }
         });
         if (!created) {
             tag.name = names;
@@ -53,7 +53,7 @@ export const addTagsGames = async (req: Request, res: Response) => {
         // Atualiza ou cria único registro por usuário
         const [tag, created] = await TagsGames.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names, image: images, pre_tag_id: null }
+            defaults: { name: names, image: images }
         });
         if (!created) {
             tag.name = names;
