@@ -8,7 +8,7 @@ import { apiFetch } from "@/lib/api";
 import api from '@/lib/api';
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
@@ -20,7 +20,7 @@ export default function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ login, password }),
       });
 
       localStorage.setItem("token", data.token);
@@ -55,10 +55,10 @@ export default function Login() {
         />
         <form onSubmit={handleLogin} className="flex flex-col gap-5 w-full">
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email ou Username"
+            value={login}
+            onChange={e => setLogin(e.target.value)}
             className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
             required
           />
