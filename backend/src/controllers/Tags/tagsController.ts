@@ -15,7 +15,7 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         const userId = req.userId;
         const { pre_tag_ids } = req.body;
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 10) {
-            return res.status(400).json({ error: 'You must provide between 3 and 10 interests.' });
+            return res.status(400).json({ error: 'Você deve selecionar de 3 a 10 interesses.' });
         }
         const preTags = await PreTagsInterests.findAll({ where: { id: pre_tag_ids } });
         if (preTags.length !== pre_tag_ids.length) {
@@ -42,7 +42,7 @@ export const addTagsGames = async (req: Request, res: Response) => {
         const userId = req.userId;
         const { pre_tag_ids } = req.body;
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 20) {
-            return res.status(400).json({ error: 'You must provide between 3 and 20 games.' });
+            return res.status(400).json({ error: 'Você deve selecionar de 3 a 20 jogos' });
         }
         const preTags = await PreTagsGames.findAll({ where: { id: pre_tag_ids } });
         if (preTags.length !== pre_tag_ids.length) {
