@@ -9,9 +9,9 @@ export default function Menu() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     if (!token) {
-      setMessage("Recusado, precisa logar novamente");
+      router.replace("/login");
       return;
     }
 
@@ -27,12 +27,16 @@ export default function Menu() {
           const data = await response.json();
           setUserData(data);
           setMessage("Dentro do site e autorizado");
+          // Se está autenticado, redireciona para /home
+          router.replace("/home");
         } else {
           setMessage("Recusado, precisa logar novamente");
+          router.replace("/login");
         }
       } catch (error) {
         console.error("Failed to fetch:", error);
         setMessage("Recusado, precisa logar novamente");
+        router.replace("/login");
       }
     };
 
