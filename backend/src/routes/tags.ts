@@ -4,10 +4,10 @@ import auth from '../middlewares/auth';
 
 const router = Router();
 
-// Adiciona tags de interesses ao usuário logado
+// Adiciona tags de interesses ao usuário logado (agora por IDs)
 router.post('/tags/interests', auth, addTagsInterests);
 
-// Adiciona tags de jogos ao usuário logado
+// Adiciona tags de jogos ao usuário logado (agora por IDs)
 router.post('/tags/games', auth, addTagsGames);
 
 // Lista todas as tags de interesses pré-prontas
