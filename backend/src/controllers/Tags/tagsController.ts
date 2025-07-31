@@ -17,18 +17,13 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 10) {
             return res.status(400).json({ error: 'Você deve selecionar de 3 a 10 interesses.' });
         }
-        const preTags = await PreTagsInterests.findAll({ where: { id: pre_tag_ids } });
-        if (preTags.length !== pre_tag_ids.length) {
-            return res.status(400).json({ error: 'Some pre_tag_ids are invalid.' });
-        }
-        const names = preTags.map(tag => tag.name);
-        // Atualiza ou cria único registro por usuário
+        // Salva apenas os IDs
         const [tag, created] = await TagsInterests.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names }
+            defaults: { pre_tag_ids }
         });
         if (!created) {
-            tag.name = names;
+            tag.pre_tag_ids = pre_tag_ids;
             await tag.save();
         }
         res.status(201).json(tag);
@@ -44,20 +39,13 @@ export const addTagsGames = async (req: Request, res: Response) => {
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 20) {
             return res.status(400).json({ error: 'Você deve selecionar de 3 a 20 jogos' });
         }
-        const preTags = await PreTagsGames.findAll({ where: { id: pre_tag_ids } });
-        if (preTags.length !== pre_tag_ids.length) {
-            return res.status(400).json({ error: 'Some pre_tag_ids are invalid.' });
-        }
-        const names = preTags.map(tag => tag.name);
-        const images = preTags.map(tag => tag.image);
-        // Atualiza ou cria único registro por usuário
+        // Salva apenas os IDs
         const [tag, created] = await TagsGames.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names, image: images }
+            defaults: { pre_tag_ids }
         });
         if (!created) {
-            tag.name = names;
-            tag.image = images;
+            tag.pre_tag_ids = pre_tag_ids;
             await tag.save();
         }
         res.status(201).json(tag);
