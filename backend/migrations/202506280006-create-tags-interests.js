@@ -16,8 +16,8 @@ module.exports = {
         references: { model: 'users', key: 'id' },
         onDelete: 'CASCADE'
       },
-      name: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
+      pre_tag_ids: {
+        type: Sequelize.ARRAY(Sequelize.INTEGER),
         allowNull: false
       }
     });
