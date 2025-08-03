@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { addTagsInterests, addTagsGames, getAllTagsInterests, getAllTagsGames, getUserTagsInterests, getUserTagsGames, addOrUpdateNicknames, getUserNicknames } from '../controllers/Tags/tagsController';
+import { addTagsInterests, addTagsGames, getAllTagsInterests, getAllTagsGames, getUserTagsInterests, getUserTagsGames, addOrUpdateNicknames, getUserNicknames, getRecommendations } from '../controllers/Tags/tagsController';
 import auth from '../middlewares/auth';
 
 const router = Router();
@@ -27,5 +27,8 @@ router.post('/tags/nicknames', auth, addOrUpdateNicknames);
 
 // Busca os nicknames do usuário logado
 router.get('/tags/nicknames-user', auth, getUserNicknames);
+
+// Recomendação: usuários com mais tags em comum
+router.get('/tags/recommendations', auth, getRecommendations);
 
 export default router;
