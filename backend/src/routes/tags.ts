@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { addTagsInterests, addTagsGames, getAllTagsInterests, getAllTagsGames, getUserTagsInterests, getUserTagsGames, addOrUpdateNicknames, getUserNicknames, getRecommendations } from '../controllers/Tags/tagsController';
+import { addTagsInterests, addTagsGames, getAllTagsInterests, getAllTagsGames, getUserTagsInterests, getUserTagsGames, addOrUpdateNicknames, getUserNicknames, getRecommendations, getUserGamesByUserId, getUserInterestsByUserId } from '../controllers/Tags/tagsController';
 import auth from '../middlewares/auth';
 
 const router = Router();
@@ -30,5 +30,11 @@ router.get('/tags/nicknames-user', auth, getUserNicknames);
 
 // Recomendação: usuários com mais tags em comum
 router.get('/tags/recommendations', auth, getRecommendations);
+
+// Busca jogos de um usuário específico por ID
+router.get('/tags/games-user/:userId', auth, getUserGamesByUserId);
+
+// Busca interesses de um usuário específico por ID
+router.get('/tags/interests-user/:userId', auth, getUserInterestsByUserId);
 
 export default router;
