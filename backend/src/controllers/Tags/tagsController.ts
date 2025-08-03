@@ -345,3 +345,75 @@ export const getRecommendations = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch recommendations', details: err });
     }
 };
+
+// Busca jogos de um usuário específico por ID
+export const getUserGamesByUserId = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.params;
+        const userIdNum = parseInt(userId);
+        
+        if (!userIdNum || isNaN(userIdNum)) {
+            return res.status(400).json({ error: 'ID de usuário inválido' });
+        }
+
+        // Verifica se o usuário existe
+        const user = await User.findByPk(userIdNum);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        const userGames = await TagsGames.findOne({ where: { user_id: userIdNum } });
+        if (!userGames || !userGames.pre_tag_ids || userGames.pre_tag_ids.length === 0) {
+            return res.json({ pre_tag_ids: [] });
+        }
+
+        // Busca os nomes dos jogos
+        const gameDetails = await PreTagsGames.findAll({
+            where: { id: userGames.pre_tag_ids }
+        });
+
+        res.json({
+            pre_tag_ids: userGames.pre_tag_ids,
+            games: gameDetails
+        });
+    } catch (err) {
+        console.error('Error fetching user games:', err);
+        res.status(500).json({ error: 'Failed to fetch user games', details: err });
+    }
+};
+
+// Busca interesses de um usuário específico por ID
+export const getUserInterestsByUserId = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.params;
+        const userIdNum = parseInt(userId);
+        
+        if (!userIdNum || isNaN(userIdNum)) {
+            return res.status(400).json({ error: 'ID de usuário inválido' });
+        }
+
+        // Verifica se o usuário existe
+        const user = await User.findByPk(userIdNum);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        const userInterests = await TagsInterests.findOne({ where: { user_id: userIdNum } });
+        if (!userInterests || !userInterests.pre_tag_ids || userInterests.pre_tag_ids.length === 0) {
+            return res.json({ pre_tag_ids: [] });
+        }
+
+        // Busca os nomes dos interesses
+        const interestDetails = await PreTagsInterests.findAll({
+            where: { id: userInterests.pre_tag_ids }
+        });
+
+        res.json({
+            pre_tag_ids: userInterests.pre_tag_ids,
+            interests: interestDetails
+        });
+    } catch (err) {
+        console.error('Error fetching user interests:', err);
+        res.status(500).json({ error: 'Failed to fetch user interests', details: err });
+    }
+};
