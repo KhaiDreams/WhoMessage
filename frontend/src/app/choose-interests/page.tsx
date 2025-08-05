@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import { tagsAPI } from '@/lib/api';
 import Image from 'next/image';
 
 export default function ChooseInterests() {
@@ -13,7 +13,7 @@ export default function ChooseInterests() {
   const router = useRouter();
 
   useEffect(() => {
-    api.get('/api/tags/interests').then(res => setInterests(res?.data ?? res ?? []));
+    tagsAPI.getInterests().then(setInterests).catch(console.error);
   }, []);
 
   const handleSelect = (id: number) => {
@@ -22,7 +22,6 @@ export default function ChooseInterests() {
       if (prev.includes(id)) {
         return prev.filter(i => i !== id);
       } else {
-        // Não seta erro aqui, deixa o useEffect cuidar disso
         if (prev.length >= 10) {
           return prev;
         }
@@ -51,8 +50,8 @@ export default function ChooseInterests() {
     }
     setLoading(true);
     try {
-      await api.post('/api/tags/interests', { pre_tag_ids: selected });
-      router.push('/choose-games');
+      await tagsAPI.updateUserInterests(selected);
+      router.push('/home');
     } catch (e) {
       setError('Erro ao salvar interesses. Tente novamente.');
     } finally {

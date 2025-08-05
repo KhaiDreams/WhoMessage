@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import { tagsAPI } from '@/lib/api';
 import Image from 'next/image';
 
 export default function ChooseGames() {
@@ -16,7 +16,7 @@ export default function ChooseGames() {
   const router = useRouter();
 
   useEffect(() => {
-    api.get('/api/tags/games').then(res => setGames(res?.data ?? res ?? []));
+    tagsAPI.getGames().then(setGames).catch(console.error);
   }, []);
 
   const handleSelect = (id: number) => {
@@ -25,7 +25,6 @@ export default function ChooseGames() {
       if (prev.includes(id)) {
         return prev.filter(i => i !== id);
       } else {
-        // Don't set error here, let useEffect handle it for consistency
         if (prev.length >= 20) {
           return prev;
         }
@@ -54,8 +53,8 @@ export default function ChooseGames() {
     }
     setLoading(true);
     try {
-      await api.post('/api/tags/games', { pre_tag_ids: selected });
-      router.push('/home');
+      await tagsAPI.updateUserGames(selected);
+      router.push('/choose-interests');
     } catch (e) {
       setError('Erro ao salvar jogos. Tente novamente.');
     } finally {
