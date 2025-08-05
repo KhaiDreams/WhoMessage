@@ -5,6 +5,7 @@ import Messages from "./Messages";
 import Profile from "./Profile";
 import Header from "./Header";
 import Welcome from "./Welcome";
+import useProfile from "@/hooks/useProfile";
 
 const tabs = [
   { key: "menu", label: "Menu", icon: "🏠" },
@@ -15,6 +16,15 @@ const tabs = [
 export default function MainApp() {
   const [tab, setTab] = useState("menu");
   const [showWelcome, setShowWelcome] = useState(true);
+  const { isAuthenticated } = useProfile();
+
+  // Verificar autenticação
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+      return;
+    }
+  }, [isAuthenticated]);
 
   // Simular verificação se é primeira vez do usuário
   useEffect(() => {
@@ -28,6 +38,17 @@ export default function MainApp() {
     localStorage.setItem('whomessage_tutorial_completed', 'true');
     setShowWelcome(false);
   };
+
+  if (!isAuthenticated()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground/60">Redirecionando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showWelcome) {
     return <Welcome onComplete={handleWelcomeComplete} />;
