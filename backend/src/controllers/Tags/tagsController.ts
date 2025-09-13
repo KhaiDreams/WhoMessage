@@ -21,14 +21,13 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         if (preTags.length !== pre_tag_ids.length) {
             return res.status(400).json({ error: 'Some pre_tag_ids are invalid.' });
         }
-        const names = preTags.map(tag => tag.name);
         // Atualiza ou cria único registro por usuário
         const [tag, created] = await TagsInterests.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names }
+            defaults: { pre_tag_ids: pre_tag_ids.map(String) }
         });
         if (!created) {
-            tag.name = names;
+            tag.pre_tag_ids = pre_tag_ids.map(String);
             await tag.save();
         }
         res.status(201).json(tag);
@@ -48,15 +47,13 @@ export const addTagsGames = async (req: Request, res: Response) => {
         if (preTags.length !== pre_tag_ids.length) {
             return res.status(400).json({ error: 'Some pre_tag_ids are invalid.' });
         }
-        const names = preTags.map(tag => tag.name);
-        const images = preTags.map(tag => tag.image);
         // Atualiza ou cria único registro por usuário
         const [tag, created] = await TagsGames.findOrCreate({
             where: { user_id: userId },
-            defaults: { name: names, image: images }
+            defaults: { pre_tag_ids: pre_tag_ids.map(String) }
         });
         if (!created) {
-            tag.name = names;
+            tag.pre_tag_ids = pre_tag_ids.map(String);
             await tag.save();
         }
         res.status(201).json(tag);

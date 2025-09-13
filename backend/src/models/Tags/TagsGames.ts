@@ -4,8 +4,7 @@ import sequelize from '../../database/db';
 export interface TagsGamesInstance extends Model {
   id: number;
   user_id: number;
-  pre_tag_ids: number[];
-  name: string[];
+  pre_tag_ids: string[];
 }
 
 export const TagsGames = sequelize.define<TagsGamesInstance>('TagsGames', {
@@ -19,10 +18,6 @@ export const TagsGames = sequelize.define<TagsGamesInstance>('TagsGames', {
     allowNull: false,
   },
   pre_tag_ids: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: false,
-  },
-  name: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     allowNull: false,
     validate: {
