@@ -318,12 +318,12 @@ export const getRecommendations = async (req: Request, res: Response) => {
 
         // Limita resultados (máx 20 pessoas)
         const finalRecommendations = [
-            ...perfectMatches.slice(0, 5),
+            ...perfectMatches.slice(0, 7),
             ...highMatches.slice(0, 5),
             ...goodMatches.slice(0, 4),
-            ...mediumMatches.slice(0, 3),
-            ...lowMatches.slice(0, 3)
-        ];
+            ...mediumMatches.slice(0, 2),
+            ...lowMatches.slice(0, 2)
+        ].slice(0, 20); // Garante no máximo 20
 
         res.json({
             message: `Encontramos ${finalRecommendations.length} pessoas para você!`,
