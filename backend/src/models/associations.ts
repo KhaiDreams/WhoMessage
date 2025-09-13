@@ -3,6 +3,7 @@ import { User } from './Users/User';
 import { Like } from './Interactions/Like';
 import { Match } from './Interactions/Match';
 import { Notification } from './Interactions/Notification';
+import { Report } from './Reports/Report';
 
 // Associações para Like
 Like.belongsTo(User, { foreignKey: 'from_user_id', as: 'fromUser' });
@@ -25,4 +26,11 @@ Notification.belongsTo(User, { foreignKey: 'from_user_id', as: 'fromUser' });
 User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
 User.hasMany(Notification, { foreignKey: 'from_user_id', as: 'sentNotifications' });
 
-export { User, Like, Match, Notification };
+// Associações para Report
+Report.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
+Report.belongsTo(User, { foreignKey: 'reported_user_id', as: 'reportedUser' });
+
+User.hasMany(Report, { foreignKey: 'reporter_id', as: 'reportsMade' });
+User.hasMany(Report, { foreignKey: 'reported_user_id', as: 'reportsReceived' });
+
+export { User, Like, Match, Notification, Report };
