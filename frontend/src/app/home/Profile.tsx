@@ -14,7 +14,9 @@ interface ProfileProps {
 
 function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: ProfileProps) {
   const [edit, setEdit] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [gamesList, setGamesList] = useState<Tag[]>([]);
   const [interestsList, setInterestsList] = useState<Tag[]>([]);
   const [gameSearch, setGameSearch] = useState('');
@@ -26,6 +28,12 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     bio: user.bio || '',
     pfp: user.pfp || '',
     newNickname: ''
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
   const [selectedGames, setSelectedGames] = useState<number[]>(userGames.map(game => game.id));
@@ -140,6 +148,42 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
       toast.error('Erro ao salvar perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error('A nova senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+
+    const strongRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!strongRegex.test(passwordData.newPassword)) {
+      toast.error('A nova senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await userAPI.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordChange(false);
+      toast.success('Senha alterada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      toast.error(error.message || 'Erro ao alterar senha');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -439,6 +483,12 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                   ✏️ Editar perfil
                 </button>
                 <button 
+                  onClick={() => setShowPasswordChange(true)}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg"
+                >
+                  🔒 Alterar senha
+                </button>
+                <button 
                   onClick={() => {
                     localStorage.removeItem('token');
                     localStorage.removeItem('whomessage_tutorial_completed');
@@ -453,6 +503,82 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
           )}
         </div>
       </div>
+
+      {/* Modal de alterar senha */}
+      {showPasswordChange && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md border border-card-border">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-foreground mb-2">🔒 Alterar Senha</h3>
+              <p className="text-foreground/60 text-sm">Digite sua senha atual e a nova senha</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground/70 mb-2">Senha atual</label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-card border border-card-border text-foreground placeholder-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary"
+                  placeholder="Digite sua senha atual"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/70 mb-2">Nova senha</label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-card border border-card-border text-foreground placeholder-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary"
+                  placeholder="Digite a nova senha"
+                />
+                <p className="text-xs text-foreground/50 mt-1">
+                  Mín. 8 caracteres, 1 maiúscula, 1 número, 1 especial
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/70 mb-2">Confirmar nova senha</label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-lg bg-card border border-card-border text-foreground placeholder-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary"
+                  placeholder="Confirme a nova senha"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={passwordLoading}
+                  className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {passwordLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Alterando...
+                    </div>
+                  ) : (
+                    '✓ Alterar'
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPasswordChange(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  }}
+                  className="px-6 py-3 rounded-lg border border-card-border text-foreground hover:bg-card/50 transition-all duration-200 font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
