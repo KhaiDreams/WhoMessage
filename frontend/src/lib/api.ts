@@ -82,6 +82,8 @@ export interface User {
   active: boolean;
   is_admin: boolean;
   ban: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RecommendationUser {
@@ -181,6 +183,88 @@ export interface UserTagsResponse {
   pre_tag_ids?: number[];
 }
 
+// Reports interfaces
+export interface Report {
+  id: number;
+  reporter_id: number;
+  reported_user_id: number;
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  admin_notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  reporter?: User;
+  reportedUser?: User;
+}
+
+export interface ReportsResponse {
+  reports: Report[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_reports: number;
+    per_page: number;
+  };
+}
+
+export interface ReportsStatsResponse {
+  reports_by_status: Array<{
+    status: string;
+    count: number;
+  }>;
+  total_reports: number;
+  banned_users: number;
+}
+
+export interface Report {
+  id: number;
+  reporter_id: number;
+  reported_user_id: number;
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  admin_notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  reporter?: User;
+  reportedUser?: User;
+}
+
+export interface ReportsResponse {
+  reports: Report[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_reports: number;
+    per_page: number;
+  };
+}
+
+export interface ReportsStatsResponse {
+  reports_by_status: Array<{ status: string; count: number }>;
+  total_reports: number;
+  banned_users: number;
+}
+
+// Admin Users interfaces
+export interface AdminUsersResponse {
+  users: User[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_users: number;
+    per_page: number;
+  };
+  stats: {
+    total: number;
+    banned: number;
+    active: number;
+    inactive: number;
+    admins: number;
+  };
+}
+
 // === API FUNCTIONS ===
 
 // Auth
@@ -205,6 +289,9 @@ export const userAPI = {
   
   updateProfile: (userData: Partial<User> & { id: number }) => 
     api.put(`/users/${userData.id}`, userData),
+  
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/users/change-password', { currentPassword, newPassword }),
   
   getRecommendations: (limit = 10): Promise<RecommendationsResponse> => 
     api.get(`/api/tags/recommendations?limit=${limit}`)
@@ -269,6 +356,36 @@ export const tagsAPI = {
   
   updateUserNicknames: (nicknames: string[]) => 
     api.post('/api/tags/nicknames', { nicknames })
+};
+
+// Reports
+export const reportsAPI = {
+  createReport: (reported_user_id: number, reason: string, description?: string) => 
+    api.post('/api/reports', { reported_user_id, reason, description }),
+  
+  getReports: (status?: string, page = 1, limit = 20, search?: string, banned?: string, username?: string, email?: string, reason?: string): Promise<ReportsResponse> => 
+    api.get(`/api/admin/reports?${status ? `status=${status}&` : ''}${search ? `search=${search}&` : ''}${banned ? `banned=${banned}&` : ''}${username ? `username=${username}&` : ''}${email ? `email=${email}&` : ''}${reason ? `reason=${reason}&` : ''}page=${page}&limit=${limit}`),
+  
+  getReportsStats: (): Promise<ReportsStatsResponse> => 
+    api.get('/api/admin/reports/stats'),
+  
+  updateReportStatus: (reportId: number, status: string, admin_notes?: string) => 
+    api.put(`/api/admin/reports/${reportId}/status`, { status, admin_notes }),
+  
+  banUserFromReport: (reportId: number, admin_notes?: string) => 
+    api.post(`/api/admin/reports/${reportId}/ban`, { admin_notes }),
+  
+  unbanUser: (userId: number, admin_notes?: string) => 
+    api.post(`/api/admin/users/${userId}/unban`, { admin_notes })
+};
+
+// Admin Users
+export const adminAPI = {
+  getUsers: (status?: string, search?: string, page = 1, limit = 20): Promise<AdminUsersResponse> => 
+    api.get(`/admin/users?${status ? `status=${status}&` : ''}${search ? `search=${search}&` : ''}page=${page}&limit=${limit}`),
+  
+  toggleUserBan: (userId: number, ban: boolean, admin_notes?: string) => 
+    api.put(`/admin/users/${userId}/ban`, { ban, admin_notes })
 };
 
 export default api;
