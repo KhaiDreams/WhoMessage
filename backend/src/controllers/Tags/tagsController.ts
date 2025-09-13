@@ -57,7 +57,6 @@ export const addTagsGames = async (req: Request, res: Response) => {
         });
         if (!created) {
             tag.name = names;
-            tag.image = images;
             await tag.save();
         }
         res.status(201).json(tag);
