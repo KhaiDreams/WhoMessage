@@ -1,8 +1,10 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useRecommendations } from "@/hooks/useRecommendations";
+import { useRecommendations } from "../../hooks/useRecommendations";
 
 export default function MenuSwipe() {
+  // Estado para controlar carregamento automático
+  const [autoLoading, setAutoLoading] = useState(false);
   const [index, setIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -25,12 +27,14 @@ export default function MenuSwipe() {
     }
   }, [index, isAnimating]);
 
-  // Agora fazemos as verificações condicionais APÓS todos os hooks
+
+  // Definir recommendation após hooks
   const recommendation = recommendations[index];
 
-  // Verificar se temos recomendações
+  // Renderização condicional após hooks
+  let content: React.ReactNode = null;
   if (loading) {
-    return (
+    content = (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -38,10 +42,8 @@ export default function MenuSwipe() {
         </div>
       </div>
     );
-  }
-
-  if (error) {
-    return (
+  } else if (error) {
+    content = (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">Erro ao carregar recomendações</p>
@@ -54,28 +56,29 @@ export default function MenuSwipe() {
         </div>
       </div>
     );
-  }
-
-  if (!recommendation || index >= recommendations.length) {
-    return (
+  } else if (!recommendation || index >= recommendations.length) {
+    content = (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Acabaram as recomendações!</h2>
-          <p className="text-foreground/60 mb-4">Volte mais tarde para ver novos perfis</p>
-          <button 
-            onClick={() => {
-              setIndex(0);
-              fetchRecommendations();
-            }}
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/80 transition-colors"
-          >
-            Buscar mais perfis
-          </button>
+          <p className="text-foreground/60 mb-4">Carregando mais perfis...</p>
         </div>
       </div>
     );
   }
+
+
+  // Efeito para buscar mais recomendações automaticamente ao chegar no fim
+  useEffect(() => {
+    if ((recommendations.length === 0 || index >= recommendations.length) && !loading && !error && !autoLoading) {
+      setAutoLoading(true);
+      fetchRecommendations().then(() => {
+        setIndex(0);
+        setAutoLoading(false);
+      });
+    }
+  }, [index, recommendations.length, loading, error, fetchRecommendations, autoLoading]);
 
   const handleSwipe = async (direction: "left" | "right") => {
     if (isAnimating || !recommendation) {
@@ -179,21 +182,9 @@ export default function MenuSwipe() {
     }
   };
 
-  if (!recommendation) return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="text-center p-8">
-        <div className="text-6xl mb-4">🎉</div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Acabaram os perfis!</h2>
-        <p className="text-foreground/70">Volte mais tarde para ver novos gamers</p>
-        <button 
-          onClick={() => setIndex(0)} 
-          className="mt-4 bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-full transition-colors shadow-lg"
-        >
-          Recomeçar
-        </button>
-      </div>
-    </div>
-  );
+
+  // Se não for loading, error ou fim das recomendações, renderiza o card normalmente
+  if (content) return content;
 
   const user = recommendation.user;
   const rotation = dragOffset.x * 0.05; // Reduzida para ser mais sutil
@@ -290,7 +281,7 @@ export default function MenuSwipe() {
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-foreground/90 mb-2">Apelidos:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {user.nicknames.map((nickname, idx) => (
+                  {user.nicknames.map((nickname: string, idx: number) => (
                     <span key={idx} className="bg-purple-500/20 text-purple-600 px-3 py-1 rounded-full text-xs md:text-sm border border-purple-500/30">
                       @{nickname}
                     </span>
@@ -306,7 +297,7 @@ export default function MenuSwipe() {
                   🎮 Jogos em comum ({recommendation.matches.games.count}/{recommendation.matches.games.total}):
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {recommendation.matches.games.common.map((game, idx) => (
+                  {recommendation.matches.games.common.map((game: { name: string }, idx: number) => (
                     <span key={idx} className="bg-green-500/20 text-green-600 px-3 py-1 rounded-full text-xs md:text-sm border border-green-500/30">
                       {game.name}
                     </span>
@@ -322,7 +313,7 @@ export default function MenuSwipe() {
                   💫 Interesses em comum ({recommendation.matches.interests.count}/{recommendation.matches.interests.total}):
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {recommendation.matches.interests.common.map((interest, idx) => (
+                  {recommendation.matches.interests.common.map((interest: { name: string }, idx: number) => (
                     <span key={idx} className="bg-blue-500/20 text-blue-600 px-3 py-1 rounded-full text-xs md:text-sm border border-blue-500/30">
                       {interest.name}
                     </span>
