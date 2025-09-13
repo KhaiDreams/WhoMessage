@@ -14,7 +14,7 @@ export const useRecommendations = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Buscar recomendações
-  const fetchRecommendations = useCallback(async (limit = 10) => {
+  const fetchRecommendations = useCallback(async (limit = 20) => {
     try {
       setLoading(true);
       setError(null);
