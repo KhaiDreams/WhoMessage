@@ -39,6 +39,10 @@ export async function AuthMiddleware(
             return res.status(401).json({ message: "Usuário não encontrado" });
         }
 
+        if (user.ban) {
+            return res.status(403).json({ message: "Usuário banido. Acesso negado." });
+        }
+
         req.userId = id;
         return next();
     } catch (error) {
