@@ -5,6 +5,7 @@ import tagsRouters from './routes/tags';
 import feedbackRoutes from './routes/feedback';
 import meRoutes from './routes/me';
 import interactionsRoutes from './routes/interactions';
+import reportsRoutes from './routes/reports';
 import cors from 'cors';
 
 const server = express();
@@ -25,6 +26,7 @@ server.use('/api', tagsRouters);
 server.use('/api/feedback', feedbackRoutes);
 server.use('/api/user/me', meRoutes);
 server.use('/api', interactionsRoutes);
+server.use('/api', reportsRoutes);
 
 const PORT = process.env.PORT;
 server.listen(PORT, () => {
