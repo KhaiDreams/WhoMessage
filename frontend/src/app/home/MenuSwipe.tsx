@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRecommendations } from "../../hooks/useRecommendations";
+import { reportsAPI } from "../../lib/api";
+import { toast } from "react-toastify";
 
 export default function MenuSwipe() {
   // Estado para controlar carregamento automático
@@ -9,6 +11,10 @@ export default function MenuSwipe() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const startPos = useRef({ x: 0, y: 0 });
   
@@ -182,6 +188,48 @@ export default function MenuSwipe() {
     }
   };
 
+  // Função para abrir modal de report
+  const handleReportClick = () => {
+    setShowReportModal(true);
+    setReportReason('');
+    setReportDescription('');
+  };
+
+  // Função para enviar report
+  const handleSubmitReport = async () => {
+    if (!recommendation || !reportReason.trim()) {
+      toast.error('Selecione um motivo para o report.');
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      await reportsAPI.createReport(
+        recommendation.user.id, 
+        reportReason, 
+        reportDescription.trim() || undefined
+      );
+      toast.success('Report enviado com sucesso! Nossa equipe irá analisar.');
+      setShowReportModal(false);
+      setReportReason('');
+      setReportDescription('');
+    } catch (error: any) {
+      console.error('Erro ao enviar report:', error);
+      toast.error(error.message || 'Erro ao enviar report.');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  // Função para fechar modal
+  const handleCloseModal = () => {
+    if (!isSubmittingReport) {
+      setShowReportModal(false);
+      setReportReason('');
+      setReportDescription('');
+    }
+  };
+
 
   // Se não for loading, error ou fim das recomendações, renderiza o card normalmente
   if (content) return content;
@@ -344,7 +392,7 @@ export default function MenuSwipe() {
         </div>
         
         {/* Action buttons */}
-        <div className="flex justify-center gap-6 mt-6">
+        <div className="flex justify-center gap-4 mt-6">
           <button 
             onClick={() => handleSwipe("left")} 
             className="bg-red-600 hover:bg-red-700 text-white rounded-full w-14 h-14 md:w-16 md:h-16 flex items-center justify-center text-2xl md:text-3xl shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border border-red-500/30"
@@ -352,6 +400,17 @@ export default function MenuSwipe() {
           >
             ✖
           </button>
+          
+          {/* Botão de Report */}
+          <button 
+            onClick={handleReportClick}
+            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-lg md:text-xl shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border border-orange-500/30"
+            disabled={isAnimating}
+            title="Reportar usuário"
+          >
+            🚨
+          </button>
+          
           <button 
             onClick={() => handleSwipe("right")} 
             className="bg-green-600 hover:bg-green-700 text-white rounded-full w-14 h-14 md:w-16 md:h-16 flex items-center justify-center text-2xl md:text-3xl shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border border-green-500/30"
@@ -361,6 +420,97 @@ export default function MenuSwipe() {
           </button>
         </div>
       </div>
+
+      {/* Modal de Report */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-2xl shadow-2xl border border-card-border max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-foreground">
+                  Reportar {recommendation?.user.username}
+                </h3>
+                <button 
+                  onClick={handleCloseModal}
+                  className="text-foreground/60 hover:text-foreground text-2xl"
+                  disabled={isSubmittingReport}
+                >
+                  ✖
+                </button>
+              </div>
+
+              <p className="text-foreground/70 mb-4 text-sm">
+                Selecione o motivo do report. Nossa equipe irá analisar.
+              </p>
+
+              {/* Motivos de report */}
+              <div className="space-y-3 mb-4">
+                <div className="text-sm font-semibold text-foreground/90 mb-2">Motivo:</div>
+                {[
+                  'Conteúdo ofensivo ou inadequado',
+                  'Perfil falso ou enganoso',
+                  'Comportamento suspeito',
+                  'Spam ou golpe',
+                  'Assédio ou intimidação',
+                  'Conteúdo sexual impróprio',
+                  'Discurso de ódio',
+                  'Outro'
+                ].map((reason) => (
+                  <label key={reason} className="flex items-center gap-3">
+                    <input 
+                      type="radio"
+                      name="report-reason"
+                      value={reason}
+                      checked={reportReason === reason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="text-primary focus:ring-primary"
+                      disabled={isSubmittingReport}
+                    />
+                    <span className="text-sm text-foreground/80">{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Descrição opcional */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-foreground/90 mb-2">
+                  Descrição adicional (opcional):
+                </label>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Descreva mais detalhes se necessário..."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full px-3 py-2 bg-card border border-card-border rounded-lg text-foreground placeholder-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+                  disabled={isSubmittingReport}
+                />
+                <div className="text-xs text-foreground/50 mt-1">
+                  {reportDescription.length}/500 caracteres
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleCloseModal}
+                  className="flex-1 bg-card/50 text-foreground border border-card-border rounded-lg px-4 py-2 font-medium hover:bg-card/70 transition-colors disabled:opacity-50"
+                  disabled={isSubmittingReport}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSubmitReport}
+                  disabled={!reportReason.trim() || isSubmittingReport}
+                  className="flex-1 bg-red-600 text-white rounded-lg px-4 py-2 font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingReport ? 'Enviando...' : 'Enviar Report'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

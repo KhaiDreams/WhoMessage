@@ -5,6 +5,7 @@ import Messages from "./Messages";
 import Profile from "./Profile";
 import Header from "./Header";
 import Welcome from "./Welcome";
+import FeedbackButton from "./FeedbackButton";
 import useProfile from "@/hooks/useProfile";
 
 const tabs = [
@@ -82,6 +83,7 @@ export default function MainApp() {
           ))}
         </div>
       </nav>
+      <FeedbackButton />
     </div>
   );
 }

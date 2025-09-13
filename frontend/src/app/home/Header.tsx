@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import useNotifications from "@/hooks/useNotifications";
+import AdminButton from "./AdminButton";
 
 interface HeaderProps {
   onLogoClick?: () => void;
@@ -40,6 +41,7 @@ export default function Header({ onLogoClick }: HeaderProps) {
         </button>
         
         <div className="flex items-center gap-3">
+          <AdminButton />
           <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
