@@ -4,6 +4,8 @@ import { Like } from './Interactions/Like';
 import { Match } from './Interactions/Match';
 import { Notification } from './Interactions/Notification';
 import { Report } from './Reports/Report';
+import { Conversation } from './Chat/Conversation';
+import { Message } from './Chat/Message';
 
 // Associações para Like
 Like.belongsTo(User, { foreignKey: 'from_user_id', as: 'fromUser' });
@@ -33,4 +35,18 @@ Report.belongsTo(User, { foreignKey: 'reported_user_id', as: 'reportedUser' });
 User.hasMany(Report, { foreignKey: 'reporter_id', as: 'reportsMade' });
 User.hasMany(Report, { foreignKey: 'reported_user_id', as: 'reportsReceived' });
 
-export { User, Like, Match, Notification, Report };
+// Associações para Conversation
+Conversation.belongsTo(User, { foreignKey: 'user1_id', as: 'user1' });
+Conversation.belongsTo(User, { foreignKey: 'user2_id', as: 'user2' });
+
+User.hasMany(Conversation, { foreignKey: 'user1_id', as: 'conversationsAsUser1' });
+User.hasMany(Conversation, { foreignKey: 'user2_id', as: 'conversationsAsUser2' });
+
+// Associações para Message
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
+
+export { User, Like, Match, Notification, Report, Conversation, Message };
