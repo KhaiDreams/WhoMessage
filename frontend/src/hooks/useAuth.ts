@@ -10,6 +10,7 @@ interface AuthState {
   hasInterests: boolean;
   isLoading: boolean;
   user: any;
+  token: string | null;
 }
 
 export default function useAuth() {
@@ -21,6 +22,7 @@ export default function useAuth() {
     hasInterests: false,
     isLoading: true,
     user: null,
+    token: null,
   });
 
   const checkAuth = async () => {
@@ -86,6 +88,7 @@ export default function useAuth() {
         hasInterests,
         isLoading: false,
         user,
+        token,
       });
 
     } catch (error) {
