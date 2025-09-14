@@ -306,7 +306,10 @@ export const interactionsAPI = {
     api.get('/api/matches'),
   
   getPendingLikes: (): Promise<Like[]> => 
-    api.get('/api/interactions/pending-likes')
+    api.get('/api/interactions/pending-likes'),
+  
+  unmatch: (matchId: number) => 
+    api.delete(`/api/matches/${matchId}`)
 };
 
 // Notifications
