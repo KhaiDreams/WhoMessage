@@ -12,12 +12,66 @@ export default function ChooseGames() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
   const pageSize = 12;
   const router = useRouter();
 
+  // Verificar se o usuário já tem games e interests configurados
   useEffect(() => {
-    tagsAPI.getGames().then(setGames).catch(console.error);
-  }, []);
+    const checkUserStatus = async () => {
+      try {
+        // Verificar se já tem games
+        const userGamesResponse = await tagsAPI.getUserGames();
+        const hasGames = !!(
+          userGamesResponse && 
+          typeof userGamesResponse === 'object' &&
+          Object.keys(userGamesResponse).length > 0 &&
+          'pre_tag_ids' in userGamesResponse &&
+          userGamesResponse.pre_tag_ids && 
+          Array.isArray(userGamesResponse.pre_tag_ids) && 
+          userGamesResponse.pre_tag_ids.length > 0
+        );
+
+        // Verificar se já tem interests  
+        const userInterestsResponse = await tagsAPI.getUserInterests();
+        const hasInterests = !!(
+          userInterestsResponse && 
+          typeof userInterestsResponse === 'object' &&
+          Object.keys(userInterestsResponse).length > 0 &&
+          'pre_tag_ids' in userInterestsResponse &&
+          userInterestsResponse.pre_tag_ids && 
+          Array.isArray(userInterestsResponse.pre_tag_ids) && 
+          userInterestsResponse.pre_tag_ids.length > 0
+        );
+
+        // Se já tem ambos, vai para home
+        if (hasGames && hasInterests) {
+          router.push('/home');
+          return;
+        }
+
+        // Se já tem games mas não tem interests, vai para interests
+        if (hasGames && !hasInterests) {
+          router.push('/choose-interests');
+          return;
+        }
+
+        // Se chegou aqui, precisa configurar games
+        setChecking(false);
+      } catch (error) {
+        console.error('Erro ao verificar status do usuário:', error);
+        setChecking(false);
+      }
+    };
+
+    checkUserStatus();
+  }, [router]);
+
+  useEffect(() => {
+    if (!checking) {
+      tagsAPI.getGames().then(setGames).catch(console.error);
+    }
+  }, [checking]);
 
   const handleSelect = (id: number) => {
     setError(null);
@@ -54,7 +108,30 @@ export default function ChooseGames() {
     setLoading(true);
     try {
       await tagsAPI.updateUserGames(selected);
-      router.push('/choose-interests');
+      
+      // Verificar se já tem interests antes de redirecionar
+      try {
+        const userInterestsResponse = await tagsAPI.getUserInterests();
+        const hasInterests = !!(
+          userInterestsResponse && 
+          typeof userInterestsResponse === 'object' &&
+          Object.keys(userInterestsResponse).length > 0 &&
+          'pre_tag_ids' in userInterestsResponse &&
+          userInterestsResponse.pre_tag_ids && 
+          Array.isArray(userInterestsResponse.pre_tag_ids) && 
+          userInterestsResponse.pre_tag_ids.length > 0
+        );
+
+        // Se já tem interests, vai direto para home
+        if (hasInterests) {
+          router.push('/home');
+        } else {
+          router.push('/choose-interests');
+        }
+      } catch {
+        // Se der erro ao verificar interests, vai para interests mesmo
+        router.push('/choose-interests');
+      }
     } catch (e) {
       setError('Erro ao salvar jogos. Tente novamente.');
     } finally {
@@ -77,6 +154,18 @@ export default function ChooseGames() {
   }, [filteredGames, page]);
 
   const totalPages = Math.ceil(filteredGames.length / pageSize) || 1;
+
+  // Mostrar loading enquanto verifica status do usuário
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground/60">Verificando seu perfil...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">

@@ -72,7 +72,8 @@ export default function Messages() {
     markAsRead,
     unreadCount,
     conversations,
-    setConversations
+    setConversations,
+    socket
   } = useSocket();
 
   // Memoized conversations with matches data
@@ -128,30 +129,38 @@ export default function Messages() {
           const lastKnownMessageId = lastMessageIdsRef.current[conv.id];
           const isNewMessage = lastKnownMessageId !== conv.lastMessage.id;
           
-          if (isNewMessage && lastKnownMessageId !== undefined) {
-            // Only process as new if we had a previous message ID (avoid initial load notifications)
+          if (isNewMessage) {
+            // Update the last known message ID first
+            lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
             
-            // If it's not the currently selected conversation, increment unread count
-            if (selected !== conv.id) {
-              setUnreadCounts(prev => ({
-                ...prev,
-                [conv.id]: (prev[conv.id] || 0) + 1
-              }));
+            // Only process as new if we had a previous message ID (avoid initial load notifications)
+            if (lastKnownMessageId !== undefined) {
               
-              // Show notification
-              if (Notification.permission === 'granted') {
-                new Notification(`Nova mensagem de ${conv.otherUser.username}`, {
-                  body: conv.lastMessage.content.length > 50 
-                    ? conv.lastMessage.content.substring(0, 50) + '...'
-                    : conv.lastMessage.content,
-                  icon: conv.otherUser.pfp || '/favicon.ico',
-                  tag: `message-${conv.id}`,
+              // If it's not the currently selected conversation, increment unread count
+              if (selected !== conv.id) {
+                setUnreadCounts(prev => {
+                  const newCounts = {
+                    ...prev,
+                    [conv.id]: (prev[conv.id] || 0) + 1
+                  };
+                  return newCounts;
                 });
+                
+                // Show notification
+                if (Notification.permission === 'granted') {
+                  new Notification(`Nova mensagem de ${conv.otherUser.username}`, {
+                    body: conv.lastMessage.content.length > 50 
+                      ? conv.lastMessage.content.substring(0, 50) + '...'
+                      : conv.lastMessage.content,
+                    icon: conv.otherUser.pfp || '/favicon.ico',
+                    tag: `message-${conv.id}`,
+                  });
+                }
               }
             }
           }
-          
-          // Update the last known message ID
+        } else if (conv.lastMessage) {
+          // Always update lastMessageId even for own messages to keep tracking in sync
           lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
         }
       });
@@ -161,23 +170,29 @@ export default function Messages() {
     prevConversationsRef.current = conversationsWithMatches;
   }, [conversationsWithMatches, selected]);
 
-  // Request notification permission on mount
+  // Request notification permission on mount and set up periodic sync
   useEffect(() => {
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
-  }, []);
+    
+    // Force sync conversations every 30 seconds to ensure data is fresh
+    const syncInterval = setInterval(() => {
+      if (connected && socket) {
+        socket.emit('get_conversations');
+      }
+    }, 30000); // 30 seconds
+    
+    return () => {
+      clearInterval(syncInterval);
+    };
+  }, [connected, socket]);
   
   const handleSelectMatch = async (matchId: number) => {
-    console.log('🔄 Selecting match:', matchId);
-    
     const matchData = conversationsWithMatches.find(c => c.id === matchId);
     if (!matchData) {
-      console.error('❌ Match not found:', matchId);
       return;
     }
-
-    console.log('📦 Match data:', matchData);
     
     try {
       // Sair da conversa anterior se houver
@@ -189,10 +204,8 @@ export default function Messages() {
       
       // Se não tem conversa ainda, criar uma
       if (!conversationId) {
-        console.log('🆕 Creating new conversation for user:', matchData.otherUser.id);
         const { conversation: newConv } = await getOrCreateConversation(matchData.otherUser.id);
         conversationId = newConv.id;
-        console.log('✅ Conversation created:', conversationId);
       }
       
       // Set selected and conversation
@@ -203,24 +216,27 @@ export default function Messages() {
       });
       setHasScrolledToUnread(false); // Reset scroll state
       
+      // Clear messages first to avoid showing old messages
+      setMessages([]);
+      
       // Entrar na conversa
-      console.log('🚪 Joining conversation:', conversationId);
       joinConversation(conversationId);
       
       // Carregar mensagens
-      console.log('📨 Loading messages for conversation:', conversationId);
       const { messages: messagesList } = await getMessages(conversationId);
-      console.log('✅ Messages loaded:', messagesList.length);
       setMessages(messagesList);
       
       // Mark messages as read
       markAsRead(conversationId);
       
       // Clear unread count for this match
-      setUnreadCounts(prev => ({
-        ...prev,
-        [matchId]: 0
-      }));
+      setUnreadCounts(prev => {
+        const newCounts = {
+          ...prev,
+          [matchId]: 0
+        };
+        return newCounts;
+      });
       
     } catch (err) {
       console.error('💥 Erro ao abrir conversa:', err);
@@ -362,7 +378,6 @@ export default function Messages() {
                 <div 
                   className="flex-1 min-w-0 cursor-pointer hover:bg-primary/5 rounded-lg p-2 -m-2 transition-colors"
                   onClick={() => {
-                    console.log('🖱️ Clicked on conversation:', conv.id, conv);
                     handleSelectMatch(conv.id);
                   }}
                 >
