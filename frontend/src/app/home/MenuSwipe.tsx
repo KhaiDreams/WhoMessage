@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 export default function MenuSwipe() {
   // Estado para controlar carregamento automático
   const [autoLoading, setAutoLoading] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [triedAuto, setTriedAuto] = useState(false);
   const [index, setIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -62,29 +64,58 @@ export default function MenuSwipe() {
         </div>
       </div>
     );
-  } else if (!recommendation || index >= recommendations.length) {
+  } else if (finished || (!recommendation || index >= recommendations.length)) {
     content = (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Acabaram as recomendações!</h2>
-          <p className="text-foreground/60 mb-4">Carregando mais perfis...</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Acabaram as pessoas por enquanto!</h2>
+          <p className="text-foreground/60 mb-4">Não há mais perfis para recomendar no momento.</p>
+          <button
+            onClick={() => {
+              setAutoLoading(true);
+              setFinished(false);
+              setTriedAuto(false);
+              fetchRecommendations().then(() => {
+                setIndex(0);
+                setAutoLoading(false);
+              });
+            }}
+            className="mt-4 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
   }
 
 
-  // Efeito para buscar mais recomendações automaticamente ao chegar no fim
+  // Efeito para buscar mais recomendações automaticamente ao chegar no fim (só uma vez)
   useEffect(() => {
-    if ((recommendations.length === 0 || index >= recommendations.length) && !loading && !error && !autoLoading) {
+    if (finished) return;
+    if ((recommendations.length === 0 || index >= recommendations.length) && !loading && !error && !autoLoading && !triedAuto) {
       setAutoLoading(true);
+      setTriedAuto(true);
       fetchRecommendations().then(() => {
         setIndex(0);
         setAutoLoading(false);
+        // Se continuar vazio, marca como finalizado
+        setTimeout(() => {
+          if (recommendations.length === 0) setFinished(true);
+        }, 100);
       });
+    } else if ((recommendations.length === 0 || index >= recommendations.length) && triedAuto) {
+      setFinished(true);
     }
-  }, [index, recommendations.length, loading, error, fetchRecommendations, autoLoading]);
+  }, [index, recommendations.length, loading, error, fetchRecommendations, autoLoading, finished, triedAuto]);
+  // Resetar finished e triedAuto se novas recomendações chegarem
+  useEffect(() => {
+    if (recommendations.length > 0 && finished) {
+      setFinished(false);
+      setTriedAuto(false);
+    }
+  }, [recommendations.length, finished]);
 
   const handleSwipe = async (direction: "left" | "right") => {
     if (isAnimating || !recommendation) {
