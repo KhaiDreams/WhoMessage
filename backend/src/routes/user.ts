@@ -13,5 +13,10 @@ router.get('/users/:id', AuthMiddleware, ApiController.listUserbyId);
 router.get('/users', AuthMiddleware, ApiController.listAllUsers);
 router.put('/users/:id', AuthMiddleware, ApiController.updateUser);
 router.post('/users/nicknames', AuthMiddleware, ApiController.addNicknames);
+router.post('/users/change-password', AuthMiddleware, ApiController.changePassword);
+
+// Admin routes
+router.get('/admin/users', AuthMiddleware, ApiController.listUsersForAdmin);
+router.put('/admin/users/:id/ban', AuthMiddleware, ApiController.toggleUserBan);
 
 export default router;

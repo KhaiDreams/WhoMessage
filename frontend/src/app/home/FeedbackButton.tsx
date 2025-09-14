@@ -2,7 +2,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 
-export default function FeedbackButton() {
+export default function FeedbackButton({ isVisible = true }: { isVisible?: boolean }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState("");
@@ -26,8 +26,12 @@ export default function FeedbackButton() {
     }
   };
 
+  if (!isVisible) {
+    return null;
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-20 right-6 z-50">
       <button
         className="bg-primary text-white px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-all"
         onClick={() => setOpen((v) => !v)}

@@ -4,8 +4,7 @@ import sequelize from '../../database/db';
 export interface TagsInterestsInstance extends Model {
   id: number;
   user_id: number;
-  pre_tag_ids: string[];
-}
+  pre_tag_ids: number[];
 
 export const TagsInterests = sequelize.define<TagsInterestsInstance>('TagsInterests', {
   id: {
@@ -18,15 +17,15 @@ export const TagsInterests = sequelize.define<TagsInterestsInstance>('TagsIntere
     allowNull: false,
   },
   pre_tag_ids: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
     allowNull: false,
     validate: {
-      minItems(value: string[]) {
+      minItems(value: number[]) {
         if (!value || value.length < 3) {
           throw new Error('At least 3 interests required');
         }
       },
-      maxItems(value: string[]) {
+      maxItems(value: number[]) {
         if (value && value.length > 10) {
           throw new Error('Maximum 10 interests allowed');
         }

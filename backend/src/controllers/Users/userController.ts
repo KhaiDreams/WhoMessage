@@ -176,15 +176,18 @@ export const updateUser = async (req: Request, res: Response) => {
         if (String(userId) !== String(paramId)) {
             return res.status(403).json({ message: 'Você só pode atualizar o seu próprio perfil.' });
         }
-        const { username, email, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
+        const { username, email, age, pfp, bio, nicknames } = req.body; // Removed sensitive fields
+        
         if (bio && bio.length > 300) {
             return res.status(422).json({ message: "A descrição (bio) não pode ter mais que 300 caracteres." });
         }
+        
         const user = await User.findByPk(userId);
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
-        // Atualiza apenas os campos permitidos
+        
+        // Atualiza apenas os campos permitidos (não sensíveis)
         user.username = username ?? user.username;
         user.email = email ?? user.email;
         user.age = age ?? user.age;
@@ -200,13 +203,57 @@ export const updateUser = async (req: Request, res: Response) => {
             user.nicknames = uniqueNicknames;
         }
         
-        user.active = active ?? user.active;
-        user.is_admin = is_admin ?? user.is_admin;
-        user.ban = ban ?? user.ban;
         await user.save();
         res.json({ message: 'Perfil atualizado com sucesso.', user });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao atualizar perfil.', error });
+    }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(422).json({ message: 'Senha atual e nova senha são obrigatórias.' });
+        }
+
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        // Verificar senha atual
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isCurrentPasswordValid) {
+            return res.status(401).json({ message: 'Senha atual incorreta.' });
+        }
+
+        // Validar nova senha
+        const strongRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+        if (newPassword.length < 8) {
+            return res.status(422).json({ message: "A nova senha deve ter pelo menos 8 caracteres." });
+        }
+        if (!strongRegex.test(newPassword)) {
+            return res.status(422).json({ message: "A nova senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial." });
+        }
+
+        // Verificar se a nova senha é diferente da atual
+        const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+        if (isSamePassword) {
+            return res.status(422).json({ message: 'A nova senha deve ser diferente da senha atual.' });
+        }
+
+        // Hash da nova senha
+        const newPasswordHash = await bcrypt.hash(newPassword, 12);
+        user.password_hash = newPasswordHash;
+        await user.save();
+
+        res.json({ message: 'Senha alterada com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        res.status(500).json({ message: 'Erro ao alterar senha.', error });
     }
 };
 
@@ -245,6 +292,117 @@ export const addNicknames = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erro ao adicionar nicknames.', error });
+    }
+};
+
+// Listar todos os usuários para admin (com filtros)
+export const listUsersForAdmin = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        
+        // Verificar se é admin
+        const user = await User.findByPk(userId);
+        if (!user?.is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
+        }
+
+        const { status, search, page = 1, limit = 20 } = req.query;
+        const offset = (Number(page) - 1) * Number(limit);
+
+        const whereClause: any = {};
+        
+        // Filtros
+        if (status === 'banned') {
+            whereClause.ban = true;
+        } else if (status === 'active') {
+            whereClause.ban = false;
+            whereClause.active = true;
+        } else if (status === 'inactive') {
+            whereClause.active = false;
+        } else if (status === 'admin') {
+            whereClause.is_admin = true;
+        }
+
+        // Busca por username ou email
+        if (search) {
+            whereClause[Op.or] = [
+                { username: { [Op.iLike]: `%${search}%` } },
+                { email: { [Op.iLike]: `%${search}%` } }
+            ];
+        }
+
+        const users = await User.findAndCountAll({
+            where: whereClause,
+            attributes: { exclude: ['password_hash'] },
+            order: [['createdAt', 'DESC']],
+            limit: Number(limit),
+            offset
+        });
+
+        // Estatísticas gerais
+        const stats = {
+            total: await User.count(),
+            banned: await User.count({ where: { ban: true } }),
+            active: await User.count({ where: { ban: false, active: true } }),
+            inactive: await User.count({ where: { active: false } }),
+            admins: await User.count({ where: { is_admin: true } })
+        };
+
+        res.json({
+            users: users.rows,
+            pagination: {
+                current_page: Number(page),
+                total_pages: Math.ceil(users.count / Number(limit)),
+                total_users: users.count,
+                per_page: Number(limit)
+            },
+            stats
+        });
+    } catch (error) {
+        console.error('Erro ao listar usuários para admin:', error);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+};
+
+// Banir/desbanir usuário diretamente (para admin)
+export const toggleUserBan = async (req: Request<{ id: string }, {}, { ban: boolean; admin_notes?: string }>, res: Response) => {
+    try {
+        const adminId = req.userId;
+        const targetUserId = req.params.id;
+        const { ban, admin_notes } = req.body;
+
+        // Verificar se é admin
+        const admin = await User.findByPk(adminId);
+        if (!admin?.is_admin) {
+            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
+        }
+
+        const targetUser = await User.findByPk(targetUserId);
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        // Não permitir banir outros admins
+        if (targetUser.is_admin && ban) {
+            return res.status(400).json({ message: 'Não é possível banir outros administradores.' });
+        }
+
+        targetUser.ban = ban;
+        await targetUser.save();
+
+        const action = ban ? 'banido' : 'desbanido';
+        
+        res.json({ 
+            message: `Usuário ${targetUser.username} foi ${action} com sucesso.`,
+            user: {
+                id: targetUser.id,
+                username: targetUser.username,
+                banned: ban
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao alterar status de ban:', error);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
     }
 };
 

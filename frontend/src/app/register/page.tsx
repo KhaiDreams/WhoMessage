@@ -109,7 +109,8 @@ export default function Register() {
       if (res.token) {
         localStorage.setItem('token', res.token);
       }
-      router.push('/choose-interests');
+      // Após criar conta, deve ir para games primeiro, não interests
+      router.push('/choose-games');
     } catch (error) {
     }
   };

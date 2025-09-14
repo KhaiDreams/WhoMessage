@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import api from '@/lib/api';
@@ -12,6 +12,16 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Se já estiver autenticado, redireciona para /home
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        router.replace('/home');
+      }
+    }
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,18 +36,42 @@ export default function Login() {
 
       localStorage.setItem("token", data.token);
 
-      // Após login bem-sucedido:
-      // Verifica se usuário já tem tags
-      const userHasTags = await api.get('/api/tags/interests-user');
-      if (!userHasTags || !userHasTags.name || userHasTags.name.length < 3) {
-        router.push('/choose-interests');
-      } else {
-        const userHasGames = await api.get('/api/tags/games-user');
-        if (!userHasGames || !userHasGames.name || userHasGames.name.length < 3) {
-          router.push('/choose-games');
-        } else {
-          router.push('/home');
+      try {
+        const userInterests = await api.get('/api/tags/interests-user');;
+        
+        const hasInterests = !!(
+          userInterests && 
+          Object.keys(userInterests).length > 0 &&
+          userInterests.pre_tag_ids && 
+          Array.isArray(userInterests.pre_tag_ids) && 
+          userInterests.pre_tag_ids.length >= 3
+        );
+        
+        if (!hasInterests) {
+          router.push('/choose-interests');
+          return;
         }
+
+        const userGames = await api.get('/api/tags/games-user');
+        
+        const hasGames = !!(
+          userGames && 
+          Object.keys(userGames).length > 0 &&
+          userGames.pre_tag_ids && 
+          Array.isArray(userGames.pre_tag_ids) && 
+          userGames.pre_tag_ids.length >= 3
+        );
+        
+        if (!hasGames) {
+          router.push('/choose-games');
+          return;
+        }
+
+        router.push('/home');
+        
+      } catch (error) {
+        console.error('❌ [LOGIN] Erro ao verificar tags:', error);
+        router.push('/home'); // Se der erro, vai para home que vai lidar
       }
     } catch (error) {
     }
