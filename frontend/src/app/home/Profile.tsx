@@ -616,7 +616,6 @@ export default function Profile() {
         });
         setUserGames(userGameObjects);
       } else {
-        console.log('Nenhum jogo encontrado ou formato inválido:', gamesResponse);
         setUserGames([]);
       }
 
@@ -624,12 +623,10 @@ export default function Profile() {
         const userInterestIds = interestsResponse.pre_tag_ids.map(id => Number(id)); // Converter strings para números
         const userInterestObjects = allInterests.filter(interest => {
           const match = userInterestIds.includes(interest.id);
-          if (match) console.log(`Interesse encontrado: ${interest.name} (ID: ${interest.id})`);
           return match;
         });
         setUserInterests(userInterestObjects);
       } else {
-        console.log('Nenhum interesse encontrado ou formato inválido:', interestsResponse);
         setUserInterests([]);
       }
     } catch (error) {
