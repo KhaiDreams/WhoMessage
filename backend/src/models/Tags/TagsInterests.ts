@@ -5,7 +5,6 @@ export interface TagsInterestsInstance extends Model {
   id: number;
   user_id: number;
   pre_tag_ids: number[];
-}
 
 export const TagsInterests = sequelize.define<TagsInterestsInstance>('TagsInterests', {
   id: {
