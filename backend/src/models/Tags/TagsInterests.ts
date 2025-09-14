@@ -5,7 +5,7 @@ interface TagsInterestsAttributes {
   id: number;
   user_id: number;
   pre_tag_ids: number[];
-
+}
 interface TagsInterestsCreationAttributes extends Optional<TagsInterestsAttributes, 'id'> {}
 
 export class TagsInterests extends Model<TagsInterestsAttributes, TagsInterestsCreationAttributes> implements TagsInterestsAttributes {
