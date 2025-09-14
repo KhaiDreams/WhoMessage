@@ -12,7 +12,7 @@ export const healthCheck = (req: Request, res: Response) => {
 
 export const addTagsInterests = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
+    const userId = Number(req.userId);
         const { pre_tag_ids } = req.body;
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 10) {
             return res.status(400).json({ error: 'Você deve selecionar de 3 a 10 interesses.' });
@@ -20,7 +20,7 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         // Salva apenas os IDs
         const [tag, created] = await TagsInterests.findOrCreate({
             where: { user_id: userId },
-            defaults: { pre_tag_ids }
+            defaults: { user_id: userId, pre_tag_ids }
         });
         if (!created) {
             tag.pre_tag_ids = pre_tag_ids;
@@ -34,7 +34,7 @@ export const addTagsInterests = async (req: Request, res: Response) => {
 
 export const addTagsGames = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
+    const userId = Number(req.userId);
         const { pre_tag_ids } = req.body;
         if (!Array.isArray(pre_tag_ids) || pre_tag_ids.length < 3 || pre_tag_ids.length > 20) {
             return res.status(400).json({ error: 'Você deve selecionar de 3 a 20 jogos' });
@@ -42,7 +42,7 @@ export const addTagsGames = async (req: Request, res: Response) => {
         // Salva apenas os IDs
         const [tag, created] = await TagsGames.findOrCreate({
             where: { user_id: userId },
-            defaults: { pre_tag_ids }
+            defaults: { user_id: userId, pre_tag_ids }
         });
         if (!created) {
             tag.pre_tag_ids = pre_tag_ids;
