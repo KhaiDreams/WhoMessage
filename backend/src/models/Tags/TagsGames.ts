@@ -1,13 +1,21 @@
-import { Model, DataTypes } from 'sequelize';
 import sequelize from '../../database/db';
+import { Model, DataTypes, Optional } from 'sequelize';
 
-export interface TagsGamesInstance extends Model {
+interface TagsGamesAttributes {
   id: number;
   user_id: number;
   pre_tag_ids: number[];
 }
 
-export const TagsGames = sequelize.define<TagsGamesInstance>('TagsGames', {
+interface TagsGamesCreationAttributes extends Optional<TagsGamesAttributes, 'id'> {}
+
+export class TagsGames extends Model<TagsGamesAttributes, TagsGamesCreationAttributes> implements TagsGamesAttributes {
+  public id!: number;
+  public user_id!: number;
+  public pre_tag_ids!: number[];
+}
+
+TagsGames.init({
   id: {
     primaryKey: true,
     autoIncrement: true,
@@ -34,6 +42,7 @@ export const TagsGames = sequelize.define<TagsGamesInstance>('TagsGames', {
     }
   }
 }, {
+  sequelize,
   tableName: 'tags_games',
   timestamps: false
 });
