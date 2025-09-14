@@ -10,16 +10,11 @@ export const useChat = () => {
   const { token } = useAuth();
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    console.log('🌐 API Call iniciada:', endpoint);
-    console.log('🔑 Token presente:', token ? 'SIM' : 'NÃO');
-    
     if (!token) {
-      console.error('❌ Token não encontrado!');
       throw new Error('Token não encontrado');
     }
 
     const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/chat${endpoint}`;
-    console.log('📍 URL completa:', url);
     
     try {
       const response = await fetch(url, {
@@ -30,21 +25,16 @@ export const useChat = () => {
           ...options.headers,
         },
       });
-
-      console.log('📡 Resposta recebida:', response.status, response.statusText);
       
       if (!response.ok) {
         const error = await response.json();
-        console.error('❌ Erro na API:', error);
         throw new Error(error.message || 'Erro na requisição');
       }
 
       const data = await response.json();
-      console.log('✅ Dados recebidos:', data);
       return data;
       
     } catch (error) {
-      console.error('💥 Erro na requisição fetch:', error);
       throw error;
     }
   };

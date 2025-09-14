@@ -184,29 +184,37 @@ export const useSocket = () => {
   }, [token, user]);
 
   const updateConversationLastMessage = (conversationId: number, message: Message) => {
-    setConversations(prev => prev.map(conv => {
-      if (conv.id === conversationId) {
-        return {
-          ...conv,
-          lastMessage: {
-            id: message.id,
-            content: message.content,
-            messageType: message.messageType,
-            senderId: message.sender.id,
-            isFromMe: message.isFromMe,
-            createdAt: message.createdAt
-          },
-          updatedAt: message.createdAt
-        };
-      }
-      return conv;
-    }));
+    setConversations(prev => {
+      const updated = prev.map(conv => {
+        if (conv.id === conversationId) {
+          const updatedConv = {
+            ...conv,
+            lastMessage: {
+              id: message.id,
+              content: message.content,
+              messageType: message.messageType,
+              senderId: message.sender.id,
+              isFromMe: message.isFromMe,
+              createdAt: message.createdAt
+            },
+            updatedAt: message.createdAt
+          };
+          return updatedConv;
+        }
+        return conv;
+      });
+      
+      return updated;
+    });
   };
 
   const joinConversation = (conversationId: number) => {
     if (socket) {
       currentConversationId.current = conversationId;
       socket.emit('join_conversation', conversationId);
+      
+      // Força uma atualização das conversas para garantir dados atualizados
+      socket.emit('get_conversations');
     }
   };
 
