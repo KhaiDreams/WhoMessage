@@ -5,7 +5,8 @@ import {
     markNotificationAsRead, 
     markAllNotificationsAsRead, 
     getMatches, 
-    getPendingLikes 
+    getPendingLikes,
+    unmatch
 } from '../controllers/Interactions/interactionsController';
 import auth from '../middlewares/auth';
 
@@ -28,5 +29,8 @@ router.get('/matches', auth, getMatches);
 
 // Buscar curtidas recebidas pendentes
 router.get('/interactions/pending-likes', auth, getPendingLikes);
+
+// Desfazer match
+router.delete('/matches/:matchId', auth, unmatch);
 
 export default router;
