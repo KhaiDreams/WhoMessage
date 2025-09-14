@@ -5,7 +5,6 @@ interface TagsGamesAttributes {
   id: number;
   user_id: number;
   pre_tag_ids: number[];
-}
 
 interface TagsGamesCreationAttributes extends Optional<TagsGamesAttributes, 'id'> {}
 
