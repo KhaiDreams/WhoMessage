@@ -83,7 +83,7 @@ export default function MainApp() {
           ))}
         </div>
       </nav>
-      <FeedbackButton />
+      <FeedbackButton isVisible={tab !== "messages"} />
     </div>
   );
 }

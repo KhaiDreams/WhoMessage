@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { userAPI, tagsAPI } from '../../lib/api';
 import { User, Tag } from '../../lib/api';
 import { toast } from 'react-toastify';
-import UserProfile from '../../components/UserProfile';
 
 interface ProfileProps {
   user: User;
