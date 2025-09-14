@@ -283,3 +283,57 @@ export const getPendingLikes = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao buscar curtidas pendentes', details: err });
     }
 };
+
+// Desfazer um match
+export const unmatch = async (req: Request, res: Response) => {
+    try {
+        const userId = Number(req.userId);
+        const { matchId } = req.params;
+
+        if (!matchId) {
+            return res.status(400).json({ error: 'ID do match é obrigatório.' });
+        }
+
+        // Busca o match e verifica se o usuário faz parte dele
+        const { Op } = require('sequelize');
+        const match = await Match.findOne({
+            where: {
+                id: matchId,
+                [Op.or]: [
+                    { user1_id: userId },
+                    { user2_id: userId }
+                ]
+            }
+        });
+
+        if (!match) {
+            return res.status(404).json({ error: 'Match não encontrado ou você não faz parte dele.' });
+        }
+
+        // Remove o match (soft delete - desativa o chat)
+        match.chat_active = false;
+        await match.save();
+
+        // Busca o outro usuário para a notificação
+        const otherUserId = match.user1_id === userId ? match.user2_id : match.user1_id;
+        const currentUser = await User.findByPk(userId, { attributes: ['id', 'username'] });
+
+        // Cria notificação para o outro usuário
+        await Notification.create({
+            user_id: otherUserId,
+            from_user_id: userId,
+            type: 'match_created', // Reutilizamos o tipo existente
+            title: '💔 Match desfeito',
+            message: `${currentUser?.username} desfez o match com você.`
+        });
+
+        res.json({
+            success: true,
+            message: 'Match desfeito com sucesso.',
+            matchId: match.id
+        });
+    } catch (err) {
+        console.error('Unmatch error:', err);
+        res.status(500).json({ error: 'Erro ao desfazer match', details: err });
+    }
+};
