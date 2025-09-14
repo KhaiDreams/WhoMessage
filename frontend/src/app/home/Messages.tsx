@@ -26,6 +26,7 @@ export default function Messages() {
   const { matches, loading, error, fetchMatches } = useMatches();
   const [selected, setSelected] = useState<number | null>(null);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  const [profileMatchId, setProfileMatchId] = useState<number | null>(null);
   const [conversation, setConversation] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,27 @@ export default function Messages() {
   const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
   
   const { getOrCreateConversation, getMessages } = useChat();
+
+  // Função para abrir perfil com informações do match
+  const openProfile = (userId: number, matchId?: number) => {
+    setProfileUserId(userId);
+    setProfileMatchId(matchId || null);
+  };
+
+  // Função para fechar perfil
+  const closeProfile = () => {
+    setProfileUserId(null);
+    setProfileMatchId(null);
+  };
+
+  // Função chamada quando match é removido
+  const handleMatchRemoved = () => {
+    // Atualiza a lista de matches
+    fetchMatches();
+    // Limpa a seleção atual se estava selecionada
+    setSelected(null);
+    setConversation(null);
+  };
   const {
     connected,
     messages,
@@ -276,8 +298,10 @@ export default function Messages() {
       {/* Profile Modal */}
       {profileUserId && (
         <UserProfile 
-          userId={profileUserId} 
-          onClose={() => setProfileUserId(null)} 
+          userId={profileUserId}
+          matchId={profileMatchId || undefined}
+          onClose={closeProfile}
+          onMatchRemoved={handleMatchRemoved}
         />
       )}
       
@@ -311,7 +335,7 @@ export default function Messages() {
                     className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-lg md:text-xl border border-primary/20 cursor-pointer hover:scale-105 transition-transform hover:border-primary/40"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setProfileUserId(conv.otherUser.id);
+                      openProfile(conv.otherUser.id, conv.matchId);
                     }}
                     title={`Ver perfil de ${conv.otherUser.username}`}
                   >
@@ -348,7 +372,7 @@ export default function Messages() {
                       className="font-semibold text-foreground hover:text-primary cursor-pointer transition-colors text-sm md:text-base truncate"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setProfileUserId(conv.otherUser.id);
+                        openProfile(conv.otherUser.id, conv.matchId);
                       }}
                       title={`Ver perfil de ${conv.otherUser.username}`}
                     >
@@ -464,7 +488,7 @@ export default function Messages() {
                 <div className="relative flex-shrink-0">
                   <div 
                     className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border border-primary/20 cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setProfileUserId(selectedConversation.otherUser.id)}
+                    onClick={() => openProfile(selectedConversation.otherUser.id, selectedConversation.matchId)}
                     title={`Ver perfil de ${selectedConversation.otherUser.username}`}
                   >
                     {selectedConversation.otherUser.pfp ? (
@@ -488,7 +512,7 @@ export default function Messages() {
                 <div className="flex-1 min-w-0">
                   <div 
                     className="font-semibold text-foreground hover:text-primary cursor-pointer transition-colors text-sm md:text-base truncate"
-                    onClick={() => setProfileUserId(selectedConversation.otherUser.id)}
+                    onClick={() => openProfile(selectedConversation.otherUser.id, selectedConversation.matchId)}
                     title={`Ver perfil de ${selectedConversation.otherUser.username}`}
                   >
                     {selectedConversation.otherUser.username}
