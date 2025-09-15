@@ -72,6 +72,7 @@ export const useSocket = () => {
     });
 
     newSocket.on('connect_error', (error) => {
+      console.warn('Socket connection error (iOS safe):', error);
       setConnected(false);
     });
 
@@ -115,34 +116,38 @@ export const useSocket = () => {
     });
 
     newSocket.on('new_message', (message: any) => {
-      const formattedMessage: Message = {
-        id: message.id,
-        content: message.content,
-        messageType: message.messageType,
-        isRead: message.isRead,
-        createdAt: message.createdAt,
-        isFromMe: message.sender.id === user.id,
-        sender: message.sender
-      };
+      try {
+        const formattedMessage: Message = {
+          id: message.id,
+          content: message.content,
+          messageType: message.messageType,
+          isRead: message.isRead,
+          createdAt: message.createdAt,
+          isFromMe: message.sender.id === user.id,
+          sender: message.sender
+        };
 
-      // Se é a conversa atual, adicionar às mensagens
-      if (message.conversationId === currentConversationId.current) {
-        setMessages(prev => [...prev, formattedMessage]);
-        
-        // Se não é própria mensagem, marcar como lida automaticamente
-        if (!formattedMessage.isFromMe) {
-          newSocket.emit('mark_as_read', {
-            conversationId: message.conversationId,
-            messageId: message.id
-          });
+        // Se é a conversa atual, adicionar às mensagens
+        if (message.conversationId === currentConversationId.current) {
+          setMessages(prev => [...prev.slice(-99), formattedMessage]); // Keep only last 100 messages
+          
+          // Se não é própria mensagem, marcar como lida automaticamente
+          if (!formattedMessage.isFromMe) {
+            newSocket.emit('mark_as_read', {
+              conversationId: message.conversationId,
+              messageId: message.id
+            });
+          }
+        } else {
+          // Atualizar contador de não lidas
+          setUnreadCount(prev => prev + 1);
         }
-      } else {
-        // Atualizar contador de não lidas
-        setUnreadCount(prev => prev + 1);
-      }
 
-      // Atualizar lista de conversas
-      updateConversationLastMessage(message.conversationId, formattedMessage);
+        // Atualizar lista de conversas
+        updateConversationLastMessage(message.conversationId, formattedMessage);
+      } catch (error) {
+        console.warn('Error processing new message:', error);
+      }
     });
 
     newSocket.on('user_typing', (data: TypingUser) => {
@@ -163,23 +168,31 @@ export const useSocket = () => {
       readBy: number;
       messageId?: number;
     }) => {
-      // Atualizar status de leitura das mensagens
-      if (data.conversationId === currentConversationId.current) {
-        setMessages(prev => prev.map(msg => ({
-          ...msg,
-          isRead: data.messageId ? (msg.id === data.messageId ? true : msg.isRead) : true
-        })));
+      try {
+        // Atualizar status de leitura das mensagens
+        if (data.conversationId === currentConversationId.current) {
+          setMessages(prev => prev.map(msg => ({
+            ...msg,
+            isRead: data.messageId ? (msg.id === data.messageId ? true : msg.isRead) : true
+          })));
+        }
+      } catch (error) {
+        console.warn('Error updating message read status:', error);
       }
     });
 
     newSocket.on('error', (error: { message: string }) => {
-      console.error('Socket error:', error.message);
+      console.warn('Socket error (iOS safe):', error.message);
     });
 
     setSocket(newSocket);
 
     return () => {
-      newSocket.close();
+      try {
+        newSocket.close();
+      } catch (error) {
+        console.warn('Error closing socket:', error);
+      }
     };
   }, [token, user]);
 
@@ -228,30 +241,46 @@ export const useSocket = () => {
   };
 
   const sendMessage = (conversationId: number, content: string, messageType: 'text' | 'image' | 'file' = 'text') => {
-    if (socket) {
-      socket.emit('send_message', {
-        conversationId,
-        content,
-        messageType
-      });
+    try {
+      if (socket && connected) {
+        socket.emit('send_message', {
+          conversationId,
+          content,
+          messageType
+        });
+      }
+    } catch (error) {
+      console.warn('Error sending message:', error);
     }
   };
 
   const startTyping = (conversationId: number) => {
-    if (socket) {
-      socket.emit('typing_start', { conversationId });
+    try {
+      if (socket && connected) {
+        socket.emit('typing_start', { conversationId });
+      }
+    } catch (error) {
+      console.warn('Error starting typing:', error);
     }
   };
 
   const stopTyping = (conversationId: number) => {
-    if (socket) {
-      socket.emit('typing_stop', { conversationId });
+    try {
+      if (socket && connected) {
+        socket.emit('typing_stop', { conversationId });
+      }
+    } catch (error) {
+      console.warn('Error stopping typing:', error);
     }
   };
 
   const markAsRead = (conversationId: number, messageId?: number) => {
-    if (socket) {
-      socket.emit('mark_as_read', { conversationId, messageId });
+    try {
+      if (socket && connected) {
+        socket.emit('mark_as_read', { conversationId, messageId });
+      }
+    } catch (error) {
+      console.warn('Error marking as read:', error);
     }
   };
 
