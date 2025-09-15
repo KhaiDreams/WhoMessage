@@ -23,6 +23,41 @@ interface ConversationWithMatch {
 }
 
 export default function Messages() {
+  const [hasError, setHasError] = useState(false);
+  
+  // Error boundary simples
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('Error in Messages:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  // Se houver erro, mostrar tela simples
+  if (hasError) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold mb-4">Oops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-4">
+            Tente recarregar a página ou volte mais tarde.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+          >
+            Recarregar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  try {
   const { matches, loading, error, fetchMatches } = useMatches();
   const [selected, setSelected] = useState<number | null>(null);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
@@ -699,4 +734,24 @@ export default function Messages() {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error('Render error:', error);
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📱</div>
+          <h2 className="text-xl font-bold mb-4">Problemas de compatibilidade</h2>
+          <p className="text-gray-600 mb-4">
+            Seu dispositivo pode ter limitações. Tente usar um navegador mais recente.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-lg"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
