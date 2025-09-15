@@ -17,7 +17,8 @@ const httpServer = createServer(server);
 // Inicializar Socket.IO
 const socketService = new SocketService(httpServer);
 
-server.use(express.json());
+server.use(express.json({ limit: '5mb' }));
+server.use(express.urlencoded({ limit: '5mb', extended: true }));
 const allowedOrigins = [
   'http://localhost:3000',
   'https://whomessage.vercel.app'

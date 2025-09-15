@@ -94,9 +94,14 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     );
   };
 
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error('Imagem muito grande! Escolha uma imagem menor que 2MB.');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData(prev => ({ ...prev, pfp: e.target?.result as string }));
