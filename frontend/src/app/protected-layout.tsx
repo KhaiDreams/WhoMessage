@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { useAuthToken } from "@/hooks/useLocalStorage";
 
 // Rotas públicas (não exigem login)
 const PUBLIC_ROUTES = ["/login", "/register", "/", "/_error"];
@@ -11,7 +10,6 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [isAllowed, setIsAllowed] = useState<null | boolean>(null);
-  const [token, setAuthToken, isTokenLoading] = useAuthToken();
 
   useEffect(() => {
     // Se for rota pública, libera
@@ -19,49 +17,39 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       setIsAllowed(true);
       return;
     }
-
-    // Aguarda o token carregar do localStorage
-    if (isTokenLoading) return;
-
     const check = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!token) {
         router.replace("/login");
         setIsAllowed(false);
         return;
       }
-      
       try {
         const me = await api.get("/api/user/me");
         if (!me || me.ban || me.active === false) {
-          setAuthToken(null);
+          localStorage.removeItem("token");
           router.replace("/login");
           setIsAllowed(false);
         } else {
           setIsAllowed(true);
         }
-      } catch (error) {
-        console.warn("Auth check failed:", error);
-        setAuthToken(null);
+      } catch {
+        localStorage.removeItem("token");
         router.replace("/login");
         setIsAllowed(false);
       }
     };
-    
     check();
-  }, [pathname, token, isTokenLoading, router, setAuthToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
-  // Loading state enquanto verifica auth ou token
-  if (isAllowed === null || isTokenLoading) {
+  if (isAllowed === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <span className="text-lg text-foreground/70">Carregando...</span>
-        </div>
+        <span className="text-lg text-foreground/70">Carregando...</span>
       </div>
     );
   }
-  
   if (!isAllowed) return null;
   return <>{children}</>;
 }

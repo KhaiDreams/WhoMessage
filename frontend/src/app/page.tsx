@@ -2,33 +2,19 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthToken } from "@/hooks/useLocalStorage";
 
 export default function Home() {
   const router = useRouter();
-  const [token, , isTokenLoading] = useAuthToken();
-  const [isMounted, setIsMounted] = useState(false);
-
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted && !isTokenLoading && token) {
-      router.replace('/home');
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        router.replace('/home');
+      }
     }
-  }, [router, token, isTokenLoading, isMounted]);
-
-  // Evita flash de conteúdo durante hydration
-  if (!isMounted || isTokenLoading) {
-    return (
-      <main className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </main>
-    );
-  }
+  }, [router]);
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen gap-8 bg-background text-foreground p-6">
@@ -39,7 +25,6 @@ export default function Home() {
         width={220}
         height={40}
         priority
-        unoptimized
       />
       <h1 className="text-4xl font-bold mb-6 text-center">
         Bem-vindo ao WhoMessage!

@@ -5,7 +5,6 @@ import "./globals.css";
 import ProtectedLayout from "./protected-layout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ErrorBoundary from "@/components/ErrorBoundary";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -57,20 +56,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <meta name="theme-color" content="#000000" />
-      </head>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning={true}
       >
-        <ErrorBoundary>
-          <ProtectedLayout>
-            {children}
-          </ProtectedLayout>
-        </ErrorBoundary>
+        <ProtectedLayout>
+          {children}
+        </ProtectedLayout>
         <ToastContainer
           position="top-right"
           autoClose={5000}
