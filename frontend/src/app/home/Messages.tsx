@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { useChat } from "@/hooks/useChat";
 import { useSocket } from "@/hooks/useSocket";
@@ -34,6 +34,45 @@ export default function Messages() {
   const lastMessageIdsRef = useRef<{[key: number]: number}>({});
   const [hasScrolledToUnread, setHasScrolledToUnread] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+  
+  // Track notification spam prevention
+  const [lastNotificationTime, setLastNotificationTime] = useState(0);
+  const NOTIFICATION_COOLDOWN = 3000; // 3 seconds between notifications
+
+  // Safe notification helper
+  const showNotification = (title: string, body: string, icon?: string) => {
+    try {
+      // Check if Notification is supported
+      if (typeof window === 'undefined' || !window.Notification) {
+        return;
+      }
+
+      // Check permission and cooldown
+      if (Notification.permission === 'granted') {
+        const now = Date.now();
+        if (now - lastNotificationTime < NOTIFICATION_COOLDOWN) {
+          return; // Skip notification to prevent spam
+        }
+
+        setLastNotificationTime(now);
+        
+        // Use setTimeout to prevent blocking the main thread
+        setTimeout(() => {
+          try {
+            new Notification(title, {
+              body: body,
+              icon: icon || '/favicon.ico',
+              tag: `message-${Date.now()}`, // Unique tag to prevent duplicate notifications
+            });
+          } catch (error) {
+            console.warn('Notification error (iOS compatibility):', error);
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.warn('Notification setup error:', error);
+    }
+  };
   
   const { getOrCreateConversation, getMessages } = useChat();
 
@@ -98,82 +137,116 @@ export default function Messages() {
     return result;
   }, [matches, conversations, unreadCounts]);
 
-  // Auto-scroll logic
+  // Auto-scroll logic - Safe for iOS/Safari
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    try {
+      if (messagesEndRef.current) {
+        // Use 'auto' instead of 'smooth' to prevent iOS crashes
+        messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+      }
+    } catch (error) {
+      console.warn('Scroll error (iOS compatibility):', error);
+    }
   };
 
   const scrollToFirstUnread = () => {
-    // For now, just scroll to bottom. Can be enhanced later with unread message detection
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    try {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+      }
+    } catch (error) {
+      console.warn('Scroll error (iOS compatibility):', error);
+    }
   };
 
-  // Scroll management
+  // Scroll management - Debounced to prevent excessive calls
   useEffect(() => {
     if (messages.length > 0) {
-      if (!hasScrolledToUnread) {
-        scrollToFirstUnread();
-        setHasScrolledToUnread(true);
-      } else {
-        scrollToBottom();
-      }
-    }
-  }, [messages, hasScrolledToUnread]);
+      const timeoutId = setTimeout(() => {
+        if (!hasScrolledToUnread) {
+          scrollToFirstUnread();
+          setHasScrolledToUnread(true);
+        } else {
+          scrollToBottom();
+        }
+      }, 100); // Small delay to batch scroll operations
 
-  // Handle new messages for unread count and notifications
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages.length, hasScrolledToUnread]); // Only depend on messages.length, not entire array
+
+  // Handle new messages for unread count and notifications - Throttled
+  const handleNewMessagesRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (conversationsWithMatches.length > 0) {
-      conversationsWithMatches.forEach(conv => {
-        if (conv.lastMessage && !conv.lastMessage.isFromMe) {
-          // Use a more reliable way to track new messages
-          const lastKnownMessageId = lastMessageIdsRef.current[conv.id];
-          const isNewMessage = lastKnownMessageId !== conv.lastMessage.id;
-          
-          if (isNewMessage) {
-            // Update the last known message ID first
-            lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
+    // Clear previous timeout
+    if (handleNewMessagesRef.current) {
+      clearTimeout(handleNewMessagesRef.current);
+    }
+
+    // Throttle the processing to prevent excessive state updates
+    handleNewMessagesRef.current = setTimeout(() => {
+      if (conversationsWithMatches.length > 0) {
+        conversationsWithMatches.forEach(conv => {
+          if (conv.lastMessage && !conv.lastMessage.isFromMe) {
+            // Use a more reliable way to track new messages
+            const lastKnownMessageId = lastMessageIdsRef.current[conv.id];
+            const isNewMessage = lastKnownMessageId !== conv.lastMessage.id;
             
-            // Only process as new if we had a previous message ID (avoid initial load notifications)
-            if (lastKnownMessageId !== undefined) {
+            if (isNewMessage) {
+              // Update the last known message ID first
+              lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
               
-              // If it's not the currently selected conversation, increment unread count
-              if (selected !== conv.id) {
-                setUnreadCounts(prev => {
-                  const newCounts = {
-                    ...prev,
-                    [conv.id]: (prev[conv.id] || 0) + 1
-                  };
-                  return newCounts;
-                });
+              // Only process as new if we had a previous message ID (avoid initial load notifications)
+              if (lastKnownMessageId !== undefined) {
                 
-                // Show notification
-                if (Notification.permission === 'granted') {
-                  new Notification(`Nova mensagem de ${conv.otherUser.username}`, {
-                    body: conv.lastMessage.content.length > 50 
+                // If it's not the currently selected conversation, increment unread count
+                if (selected !== conv.id) {
+                  setUnreadCounts(prev => {
+                    const newCounts = {
+                      ...prev,
+                      [conv.id]: (prev[conv.id] || 0) + 1
+                    };
+                    return newCounts;
+                  });
+                  
+                  // Show notification - Use safe notification helper
+                  showNotification(
+                    `Nova mensagem de ${conv.otherUser.username}`,
+                    conv.lastMessage.content.length > 50 
                       ? conv.lastMessage.content.substring(0, 50) + '...'
                       : conv.lastMessage.content,
-                    icon: conv.otherUser.pfp || '/favicon.ico',
-                    tag: `message-${conv.id}`,
-                  });
+                    conv.otherUser.pfp
+                  );
                 }
               }
             }
+          } else if (conv.lastMessage) {
+            // Always update lastMessageId even for own messages to keep tracking in sync
+            lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
           }
-        } else if (conv.lastMessage) {
-          // Always update lastMessageId even for own messages to keep tracking in sync
-          lastMessageIdsRef.current[conv.id] = conv.lastMessage.id;
-        }
-      });
-    }
-    
-    // Keep the old ref for backward compatibility
-    prevConversationsRef.current = conversationsWithMatches;
-  }, [conversationsWithMatches, selected]);
+        });
+      }
+      
+      // Keep the old ref for backward compatibility
+      prevConversationsRef.current = conversationsWithMatches;
+    }, 200); // 200ms throttle
+
+    return () => {
+      if (handleNewMessagesRef.current) {
+        clearTimeout(handleNewMessagesRef.current);
+      }
+    };
+  }, [conversationsWithMatches.length, selected]); // Only depend on length and selected, not entire array
 
   // Request notification permission on mount and set up periodic sync
   useEffect(() => {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
+    // Safe notification permission request
+    if (typeof window !== 'undefined' && window.Notification && Notification.permission === 'default') {
+      setTimeout(() => {
+        Notification.requestPermission().catch(error => {
+          console.warn('Notification permission error:', error);
+        });
+      }, 1000); // Delay to prevent blocking initial render
     }
     
     // Force sync conversations every 30 seconds to ensure data is fresh
@@ -243,12 +316,12 @@ export default function Messages() {
     }
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = useCallback((content: string) => {
     if (!conversation) return;
     sendMessage(conversation.id, content);
-    // Scroll to bottom after sending
-    setTimeout(() => scrollToBottom(), 100);
-  };
+    // Scroll to bottom after sending - Debounced
+    setTimeout(() => scrollToBottom(), 150);
+  }, [conversation, sendMessage]);
 
   const handleStartTyping = () => {
     if (!conversation) return;
@@ -338,7 +411,7 @@ export default function Messages() {
               <p className="text-foreground/60 text-sm">Nenhuma conversa ainda</p>
             </div>
           ) : (
-            conversationsWithMatches.map(conv => (
+            conversationsWithMatches.slice(0, 50).map(conv => (
               <div
                 key={`conv-${conv.id}-${conv.matchId}`}
                 className={`flex items-center gap-3 p-3 md:p-4 border-b border-card-border/30 ${
@@ -563,7 +636,8 @@ export default function Messages() {
                         </div>
                       ) : (
                         <>
-                          {messages.map((message, index) => (
+                          {/* Limit messages to last 100 for performance on mobile devices */}
+                          {messages.slice(-100).map((message, index) => (
                             <div key={`${message.id}-${index}`} className={`flex ${message.isFromMe ? 'justify-end' : 'justify-start'} group`}>
                               <div
                                 className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
@@ -614,8 +688,8 @@ export default function Messages() {
                         </>
                       )}
                       
-                      {/* Indicador de digitação */}
-                      {typingUsers.filter(t => conversation && t.conversationId === conversation.id).map(typingUser => (
+                      {/* Indicador de digitação - Limit to current conversation only */}
+                      {conversation && typingUsers.filter(t => t.conversationId === conversation.id).slice(0, 3).map(typingUser => (
                         <div key={typingUser.userId} className="flex justify-start">
                           <div className="bg-card border border-card-border text-foreground px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
                             <div className="flex items-center space-x-2">
