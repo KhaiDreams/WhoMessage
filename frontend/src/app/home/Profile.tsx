@@ -148,17 +148,20 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
       setFormData(prev => ({ ...prev, newNickname: '' }));
       toast.success('Perfil atualizado com sucesso!');
     } catch (error: any) {
-      console.error('Erro ao salvar perfil:', error);
-      // Tenta identificar erro de payload grande
-      if (
-        error?.response?.data?.error?.includes('PayloadTooLargeError') ||
-        error?.message?.includes('PayloadTooLargeError') ||
-        error?.response?.status === 413
-      ) {
-        toast.error('Imagem muito grande! Escolha uma imagem menor.');
+      // Trata somente como imagem muito grande quando o backend indicar claramente (evita duplicidade do "Failed to fetch")
+      const isImageTooLarge =
+        error?.response?.status === 413 ||
+        error?.status === 413 ||
+        error?.response?.data?.error === 'IMAGE_TOO_LARGE' ||
+        error?.message === 'IMAGE_TOO_LARGE' ||
+        (typeof error?.message === 'string' && error.message.toLowerCase().includes('payload too large'));
+
+      if (isImageTooLarge) {
+        toast.error('A imagem é muito grande. Por favor, escolha uma imagem menor.');
       } else {
         toast.error('Erro ao salvar perfil');
       }
+      console.error('Erro ao salvar perfil:', error);
     } finally {
       setLoading(false);
     }
