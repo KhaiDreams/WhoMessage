@@ -142,9 +142,21 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
       // Limpar o campo de novo nickname
       setFormData(prev => ({ ...prev, newNickname: '' }));
       toast.success('Perfil atualizado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
+      // Trata somente como imagem muito grande quando o backend indicar claramente (evita duplicidade do "Failed to fetch")
+      const isImageTooLarge =
+        error?.response?.status === 413 ||
+        error?.status === 413 ||
+        error?.response?.data?.error === 'IMAGE_TOO_LARGE' ||
+        error?.message === 'IMAGE_TOO_LARGE' ||
+        (typeof error?.message === 'string' && error.message.toLowerCase().includes('payload too large'));
+
+      if (isImageTooLarge) {
+        toast.error('A imagem é muito grande. Por favor, escolha uma imagem menor.');
+      } else {
+        toast.error('Erro ao salvar perfil');
+      }
       console.error('Erro ao salvar perfil:', error);
-      toast.error('Erro ao salvar perfil');
     } finally {
       setLoading(false);
     }
