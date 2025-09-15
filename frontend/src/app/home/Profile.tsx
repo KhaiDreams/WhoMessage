@@ -94,9 +94,14 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     );
   };
 
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error('Imagem muito grande! Escolha uma imagem menor que 2MB.');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData(prev => ({ ...prev, pfp: e.target?.result as string }));
@@ -142,9 +147,18 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
       // Limpar o campo de novo nickname
       setFormData(prev => ({ ...prev, newNickname: '' }));
       toast.success('Perfil atualizado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar perfil:', error);
-      toast.error('Erro ao salvar perfil');
+      // Tenta identificar erro de payload grande
+      if (
+        error?.response?.data?.error?.includes('PayloadTooLargeError') ||
+        error?.message?.includes('PayloadTooLargeError') ||
+        error?.response?.status === 413
+      ) {
+        toast.error('Imagem muito grande! Escolha uma imagem menor.');
+      } else {
+        toast.error('Erro ao salvar perfil');
+      }
     } finally {
       setLoading(false);
     }
