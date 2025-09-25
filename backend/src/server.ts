@@ -22,7 +22,7 @@ server.use(express.urlencoded({ limit: '5mb', extended: true }));
 const allowedOrigins = [
   'http://localhost:3000',
   'https://whomessage.vercel.app',
-  'https://whomessage.chat'
+  'https://www.whomessage.chat'
 ];
 server.use(cors({
   origin: allowedOrigins,
