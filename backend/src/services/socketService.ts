@@ -25,7 +25,7 @@ class SocketService {
   constructor(server: HTTPServer) {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: ['http://localhost:3000', 'https://whomessage.vercel.app'],
+        origin: ['http://localhost:3000', 'https://whomessage.vercel.app', 'https://www.whomessage.chat'],
         methods: ['GET', 'POST'],
         credentials: true
       }
