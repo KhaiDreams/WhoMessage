@@ -1,8 +1,6 @@
 # WhoMessage 🤔💭
 WhoMessage is a captivating and innovative personal project that serves as a platform for users to send anonymous messages to friends, enemies, crushes and more. Designed with the intention of fostering connections within and outside the gaming community, WhoMessage introduces an interesting dimension to communication, allowing users to share messages without revealing their identities.
 
-(Until the user authorizes)
-
 ![logo](https://github.com/KhaiDreams/WhoMessage/assets/70505025/49929a31-83f4-4025-b6e3-fffb274e08ed)
 
 
