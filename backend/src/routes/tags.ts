@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { addTagsInterests, addTagsGames, getAllTagsInterests, getAllTagsGames, getUserTagsInterests, getUserTagsGames, addOrUpdateNicknames, getUserNicknames, getRecommendations, getUserGamesByUserId, getUserInterestsByUserId } from '../controllers/Tags/tagsController';
 import auth from '../middlewares/auth';
+import { searchLimiter } from '../middlewares/rateLimiter';
+import { validateQuery, validateParams } from '../middlewares/validation';
+import { recommendationsQuerySchema, userIdSchema } from '../validators/commonValidators';
 
 const router = Router();
 
@@ -28,13 +31,13 @@ router.post('/tags/nicknames', auth, addOrUpdateNicknames);
 // Busca os nicknames do usuário logado
 router.get('/tags/nicknames-user', auth, getUserNicknames);
 
-// Recomendação: usuários com mais tags em comum
-router.get('/tags/recommendations', auth, getRecommendations);
+// Recomendação: usuários com mais tags em comum (com rate limiting e validação)
+router.get('/tags/recommendations', searchLimiter, auth, validateQuery(recommendationsQuerySchema), getRecommendations);
 
-// Busca jogos de um usuário específico por ID
-router.get('/tags/games-user/:userId', auth, getUserGamesByUserId);
+// Busca jogos de um usuário específico por ID (com validação)
+router.get('/tags/games-user/:userId', auth, validateParams(userIdSchema), getUserGamesByUserId);
 
-// Busca interesses de um usuário específico por ID
-router.get('/tags/interests-user/:userId', auth, getUserInterestsByUserId);
+// Busca interesses de um usuário específico por ID (com validação)
+router.get('/tags/interests-user/:userId', auth, validateParams(userIdSchema), getUserInterestsByUserId);
 
 export default router;
