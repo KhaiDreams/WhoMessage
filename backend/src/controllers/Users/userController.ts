@@ -103,7 +103,6 @@ export const loginUser = async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email,
             },
             token
         });
@@ -132,23 +131,6 @@ export const listUserbyId = async (req: Request, res: Response) => {
     } catch (error) {
         res.status(500).json({
             'error': 'Erro ao buscar usuário',
-        });
-    }
-};
-
-export const listAllUsers = async (req: Request, res: Response) => {
-    try {
-        const users = await User.findAll({
-            attributes: { exclude: ['email', 'password_hash'] }
-        });
-
-        res.status(200).json({
-            users,
-            message: 'Lista de usuários encontrada'
-        });
-    } catch (error) {
-        res.status(500).json({
-            'error': 'Erro ao buscar lista de usuários',
         });
     }
 };
