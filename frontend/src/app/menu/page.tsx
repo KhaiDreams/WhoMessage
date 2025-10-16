@@ -17,7 +17,8 @@ export default function Menu() {
 
     const fetchData = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
+        // Usar rota /api/user/me que já existe e é mais segura
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/me`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,

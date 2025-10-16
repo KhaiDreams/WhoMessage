@@ -29,9 +29,13 @@ export async function chatAuthMiddleware(
 
     const token = authorization.split(" ")[1];
     const secret = process.env.SECRET;
+    
+    if (!secret) {
+        return res.status(500).json({ message: "Configuração do servidor inválida" });
+    }
 
     try {
-        const data = verify(token, secret ?? '') as TokenPayload;
+        const data = verify(token, secret) as TokenPayload;
         const { id } = data;
         const user = await User.findByPk(id);
 
