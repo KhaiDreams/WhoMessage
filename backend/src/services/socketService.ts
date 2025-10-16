@@ -39,16 +39,13 @@ class SocketService {
     this.io.use(async (socket: AuthenticatedSocket, next) => {
       try {
         const token = socket.handshake.auth.token;
-        console.log('Socket auth attempt, token:', token ? 'present' : 'missing');
         
         if (!token) {
-          console.log('Socket auth failed: no token');
           return next(new Error('Authentication error'));
         }
 
-        const secret = process.env.SECRET || process.env.JWT_SECRET;
+        const secret = process.env.SECRET;
         if (!secret) {
-          console.log('Socket auth failed: no JWT secret');
           return next(new Error('Server configuration error'));
         }
 
@@ -56,16 +53,13 @@ class SocketService {
         const user = await User.findByPk(decoded.id);
         
         if (!user) {
-          console.log('Socket auth failed: user not found');
           return next(new Error('User not found'));
         }
 
-        console.log('Socket auth success for user:', user.id);
         socket.userId = decoded.id;
         socket.user = user;
         next();
       } catch (error) {
-        console.log('Socket auth error:', error);
         next(new Error('Authentication error'));
       }
     });
@@ -73,7 +67,6 @@ class SocketService {
 
   private setupEventHandlers() {
     this.io.on('connection', (socket: AuthenticatedSocket) => {
-      console.log(`User ${socket.userId} connected`);
       
       // Armazenar o usuário conectado
       if (socket.userId) {
@@ -125,7 +118,6 @@ class SocketService {
       });
 
       socket.on('disconnect', () => {
-        console.log(`User ${socket.userId} disconnected`);
         if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
           this.handleUserDisconnect(socket.userId);
