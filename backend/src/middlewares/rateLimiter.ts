@@ -26,3 +26,39 @@ export const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Rate limiting para interações (likes/passes)
+export const interactionLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 30, // máximo 30 interações por minuto por IP
+  message: { error: 'Muitas interações. Aguarde um momento.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting para mensagens
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 30, // máximo 30 mensagens por minuto por IP
+  message: { error: 'Muitas mensagens. Aguarde um momento.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting para relatórios
+export const reportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 30, // máximo 30 relatórios por hora por IP
+  message: { error: 'Muitos relatórios enviados. Tente novamente em 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting para buscas e recomendações
+export const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 35, // máximo 35 buscas por minuto por IP
+  message: { error: 'Muitas buscas. Aguarde um momento.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
