@@ -21,14 +21,7 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
     try {
         const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
-        if (age < 14 || age > 99) {
-            return res.status(422).json({ message: "Você precisa ter a idade mínima de 14 anos para acessar o site" });
-        }
-
-        if (bio && bio.length > 300) {
-            return res.status(422).json({ message: "A descrição (bio) não pode ter mais que 300 caracteres." });
-        }
-
+        // Verificar se usuário já existe
         const userExists = await User.findOne({ where: { email } });
         const usernameExists = await User.findOne({ where: { username } });
 
@@ -38,19 +31,6 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
 
         if (usernameExists) {
             return res.status(422).json({ message: "Já existe um usuário com esse username!" });
-        }
-
-        if (!password) {
-            return res.status(422).json({ message: "Senha é obrigatória!" });
-        }
-
-        // Validação de senha forte
-        const strongRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-        if (password.length < 8) {
-            return res.status(422).json({ message: "A senha deve ter pelo menos 8 caracteres." });
-        }
-        if (!strongRegex.test(password)) {
-            return res.status(422).json({ message: "A senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial." });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
@@ -68,10 +48,15 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             ban: ban ?? false
         });
 
+        const secret = process.env.SECRET;
+        if (!secret) {
+            throw new Error('JWT_SECRET is required');
+        }
+
         const token = jwt.sign(
             { id: newUser.id },
-            process.env.SECRET ?? '',
-            { expiresIn: 30 * 24 * 60 * 60 }
+            secret,
+            { expiresIn: '7d' } // 7 dias
         );
 
         res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser, token });
@@ -84,10 +69,6 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
 export const loginUser = async (req: Request, res: Response) => {
     try {
         const { login, password } = req.body;
-
-        if (!login || !password) {
-            return res.status(422).json({ message: "email/username e senha são obrigatórios!" });
-        }
 
         // Busca por email ou username
         const user = await User.findOne({
@@ -107,11 +88,15 @@ export const loginUser = async (req: Request, res: Response) => {
             return res.status(403).json({ message: "Usuário banido!" });
         }
 
-        const secret = process.env.SECRET ?? '';
+        const secret = process.env.SECRET;
+        if (!secret) {
+            throw new Error('JWT_SECRET is required');
+        }
+
         const token = jwt.sign(
             { id: user.id },
             secret,
-            { expiresIn: 30 * 24 * 60 * 60 } // 1 month
+            { expiresIn: '7d' } // 7 dias
         );
 
         return res.json({
@@ -178,9 +163,7 @@ export const updateUser = async (req: Request, res: Response) => {
         }
         const { username, email, age, pfp, bio, nicknames } = req.body; // Removed sensitive fields
         
-        if (bio && bio.length > 300) {
-            return res.status(422).json({ message: "A descrição (bio) não pode ter mais que 300 caracteres." });
-        }
+
         
         const user = await User.findByPk(userId);
         if (!user) {
@@ -215,10 +198,6 @@ export const changePassword = async (req: Request, res: Response) => {
         const userId = req.userId;
         const { currentPassword, newPassword } = req.body;
 
-        if (!currentPassword || !newPassword) {
-            return res.status(422).json({ message: 'Senha atual e nova senha são obrigatórias.' });
-        }
-
         const user = await User.findByPk(userId);
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
@@ -228,15 +207,6 @@ export const changePassword = async (req: Request, res: Response) => {
         const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
         if (!isCurrentPasswordValid) {
             return res.status(401).json({ message: 'Senha atual incorreta.' });
-        }
-
-        // Validar nova senha
-        const strongRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-        if (newPassword.length < 8) {
-            return res.status(422).json({ message: "A nova senha deve ter pelo menos 8 caracteres." });
-        }
-        if (!strongRegex.test(newPassword)) {
-            return res.status(422).json({ message: "A nova senha deve conter pelo menos 1 letra maiúscula, 1 número e 1 caractere especial." });
         }
 
         // Verificar se a nova senha é diferente da atual
@@ -261,10 +231,6 @@ export const addNicknames = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
         const { nicknames } = req.body;
-
-        if (!nicknames) {
-            return res.status(400).json({ message: 'Nicknames são obrigatórios.' });
-        }
 
         const user = await User.findByPk(userId);
         if (!user) {
