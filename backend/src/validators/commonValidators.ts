@@ -67,15 +67,15 @@ export const adminSearchQuerySchema = Joi.object({
 
 // Validação para parâmetros de interações
 export const interactionSchema = Joi.object({
-  userId: Joi.number()
+  to_user_id: Joi.number()
     .integer()
     .positive()
     .required()
     .messages({
-      'number.base': 'ID do usuário deve ser um número',
-      'number.integer': 'ID do usuário deve ser um número inteiro',
-      'number.positive': 'ID do usuário deve ser positivo',
-      'any.required': 'ID do usuário é obrigatório'
+      'number.base': 'ID do usuário alvo deve ser um número',
+      'number.integer': 'ID do usuário alvo deve ser um número inteiro',
+      'number.positive': 'ID do usuário alvo deve ser positivo',
+      'any.required': 'ID do usuário alvo é obrigatório'
     }),
   action: Joi.string()
     .valid('like', 'pass')
