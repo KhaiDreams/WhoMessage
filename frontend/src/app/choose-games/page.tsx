@@ -219,7 +219,7 @@ export default function ChooseGames() {
                 key={game.id}
                 type="button"
                 onClick={() => handleSelect(game.id)}
-                className={`group relative flex flex-col items-center justify-between px-4 py-5 min-h-[180px] rounded-3xl font-semibold border-0 transition-all duration-200 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-accent focus:z-10 bg-gradient-to-br from-[#23243a] to-[#181a20] hover:scale-[1.03] hover:shadow-2xl overflow-hidden
+                className={`relative flex flex-col items-center justify-between px-4 py-5 min-h-[180px] rounded-3xl font-semibold border-0 transition-[transform,box-shadow] duration-150 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-accent focus:z-10 bg-gradient-to-br from-[#23243a] to-[#181a20] hover:scale-[1.03] hover:shadow-2xl overflow-hidden
                   ${isSelected ? 'ring-4 ring-pink-600 scale-105' : ''}
                 `}
                 aria-pressed={isSelected}
@@ -227,7 +227,7 @@ export default function ChooseGames() {
               >
                 <div className="w-full flex flex-col items-center mb-2">
                   {game.image && (
-                    <img src={game.image} alt={game.name} className="w-16 h-16 object-cover rounded-2xl border-2 border-[#23243a] bg-card shadow-md group-hover:scale-110 transition" />
+                    <img src={game.image} alt={game.name} className="w-16 h-16 object-cover rounded-2xl border-2 border-[#23243a] bg-card shadow-md" loading="lazy" decoding="async" />
                   )}
                 </div>
                 <div className="flex flex-col items-center flex-1 min-w-0 w-full">
@@ -235,7 +235,7 @@ export default function ChooseGames() {
                   {game.category && <span className="text-xs opacity-70 mt-1 text-center w-full truncate">{game.category}</span>}
                 </div>
                 {isSelected && (
-                  <span className="absolute top-2 right-2 bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-pulse z-10">Selecionado</span>
+                  <span className="absolute top-2 right-2 bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10">✓</span>
                 )}
               </button>
             );
