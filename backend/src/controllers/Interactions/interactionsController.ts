@@ -111,7 +111,7 @@ export const likeUser = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Like error:', err);
-        res.status(500).json({ error: 'Erro ao processar like', details: err });
+        res.status(500).json({ error: 'Erro ao processar like' });
     }
 };
 
@@ -151,7 +151,7 @@ export const getNotifications = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Notifications error:', err);
-        res.status(500).json({ error: 'Erro ao buscar notificações', details: err });
+        res.status(500).json({ error: 'Erro ao buscar notificações' });
     }
 };
 
@@ -174,7 +174,8 @@ export const markNotificationAsRead = async (req: Request, res: Response) => {
 
         res.json({ success: true, message: 'Notificação marcada como lida.' });
     } catch (err) {
-        res.status(500).json({ error: 'Erro ao marcar notificação', details: err });
+        console.error('Mark notification error:', err);
+        res.status(500).json({ error: 'Erro ao marcar notificação' });
     }
 };
 
@@ -190,7 +191,8 @@ export const markAllNotificationsAsRead = async (req: Request, res: Response) =>
 
         res.json({ success: true, message: 'Todas as notificações foram marcadas como lidas.' });
     } catch (err) {
-        res.status(500).json({ error: 'Erro ao marcar notificações', details: err });
+        console.error('Mark all notifications error:', err);
+        res.status(500).json({ error: 'Erro ao marcar notificações' });
     }
 };
 
@@ -203,7 +205,8 @@ export const clearNotifications = async (req: Request, res: Response) => {
 
         res.json({ success: true, deleted, message: 'Notificações apagadas com sucesso.' });
     } catch (err) {
-        res.status(500).json({ error: 'Erro ao limpar notificações', details: err });
+        console.error('Clear notifications error:', err);
+        res.status(500).json({ error: 'Erro ao limpar notificações' });
     }
 };
 
@@ -252,7 +255,7 @@ export const getMatches = async (req: Request, res: Response) => {
         res.json(formattedMatches);
     } catch (err) {
         console.error('Matches error:', err);
-        res.status(500).json({ error: 'Erro ao buscar matches', details: err });
+        res.status(500).json({ error: 'Erro ao buscar matches' });
     }
 };
 
@@ -309,7 +312,7 @@ export const getPendingLikes = async (req: Request, res: Response) => {
         res.json(likesWithoutMatch);
     } catch (err) {
         console.error('Pending likes error:', err);
-        res.status(500).json({ error: 'Erro ao buscar curtidas pendentes', details: err });
+        res.status(500).json({ error: 'Erro ao buscar curtidas pendentes' });
     }
 };
 
@@ -363,6 +366,6 @@ export const unmatch = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Unmatch error:', err);
-        res.status(500).json({ error: 'Erro ao desfazer match', details: err });
+        res.status(500).json({ error: 'Erro ao desfazer match' });
     }
 };
