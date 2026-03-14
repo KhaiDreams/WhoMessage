@@ -51,10 +51,7 @@ export const registerSchema = Joi.object({
       'string.max': 'A descrição (bio) não pode ter mais que 300 caracteres'
     }),
   
-  pfp: Joi.alternatives().try(
-    Joi.string().uri({ scheme: ['http', 'https'] }),
-    Joi.string().pattern(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/)
-  ).allow('').optional(),
+  pfp: Joi.string().uri({ scheme: ['http', 'https'] }).allow('').optional(),
 
   nicknames: Joi.array().items(Joi.string().trim()).optional(),
   active: Joi.boolean().optional()
@@ -125,10 +122,7 @@ export const updateUserSchema = Joi.object({
       'string.max': 'A descrição (bio) não pode ter mais que 300 caracteres'
     }),
 
-  pfp: Joi.alternatives().try(
-    Joi.string().uri({ scheme: ['http', 'https'] }),
-    Joi.string().pattern(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/)
-  ).allow('').optional(),
+  pfp: Joi.string().uri({ scheme: ['http', 'https'] }).allow('').optional(),
   
   nicknames: Joi.array().items(
     Joi.string()

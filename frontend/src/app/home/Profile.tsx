@@ -23,6 +23,9 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
   const [gameSearch, setGameSearch] = useState('');
   const [interestSearch, setInterestSearch] = useState('');
   
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+
   const [formData, setFormData] = useState({
     username: user.username,
     age: String(user.age),
@@ -54,6 +57,11 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
       pfp: user.pfp || '',
       newNickname: ''
     });
+    setAvatarFile(null);
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview('');
+    }
     setSelectedGames(userGames.map(game => game.id));
     setSelectedInterests(userInterests.map(interest => interest.id));
   }, [user, userGames, userInterests]);
@@ -96,20 +104,18 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     );
   };
 
-  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > MAX_IMAGE_SIZE) {
-        toast.error('Imagem muito grande! Escolha uma imagem menor que 2MB.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFormData(prev => ({ ...prev, pfp: e.target?.result as string }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error('Imagem muito grande! Escolha uma imagem menor que 5MB.');
+      return;
     }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    const preview = URL.createObjectURL(file);
+    setAvatarFile(file);
+    setAvatarPreview(preview);
   };
 
   const handleSave = async () => {
@@ -137,9 +143,10 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
         bio: formData.bio,
       };
 
-      // Só inclui pfp se o usuário realmente trocou a foto
-      if (formData.pfp !== (user.pfp || '')) {
-        updateData.pfp = formData.pfp;
+      // Se há um novo arquivo de avatar, faz upload para o Cloudinary primeiro
+      if (avatarFile) {
+        const { url } = await userAPI.uploadAvatar(avatarFile);
+        updateData.pfp = url;
       }
 
       // Se há um novo nickname, adicionar ao array
@@ -156,6 +163,11 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
 
       await onProfileUpdate();
       setEdit(false);
+      setAvatarFile(null);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview('');
+      }
       // Limpar o campo de novo nickname
       setFormData(prev => ({ ...prev, newNickname: '' }));
       toast.success('Perfil atualizado com sucesso!');
@@ -249,8 +261,8 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                 <div className="flex justify-center">
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl overflow-hidden">
-                      {formData.pfp ? (
-                        <img src={formData.pfp} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                      {(avatarPreview || formData.pfp) ? (
+                        <img src={avatarPreview || formData.pfp} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <Gamepad2 className="w-12 h-12 text-primary/60" />
                       )}
