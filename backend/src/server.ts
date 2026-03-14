@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { createServer } from 'http';
+import https from 'https';
 import helmet from 'helmet';
 import './models/associations'; // Importar associações ANTES dos routes
 import apiRouters from './routes/user';
@@ -62,6 +63,11 @@ server.use(cors({
 // Aplicar rate limiting geral
 server.use(generalLimiter);
 
+// Health check endpoint (usado pelo self-ping e por monitores externos)
+server.get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 server.use('/', apiRouters);
 server.use('/api', tagsRouters);
 server.use('/api/feedback', feedbackRoutes);
@@ -73,6 +79,18 @@ server.use('/api/chat', chatRoutes);
 const PORT = process.env.PORT;
 httpServer.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
+
+    // Self-ping a cada 14 minutos para evitar cold start no Render (free tier dorme após 15 min)
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL;
+    if (SELF_URL) {
+        setInterval(() => {
+            https.get(`${SELF_URL}/health`, (res) => {
+                console.log(`[keep-alive] ping → ${res.statusCode}`);
+            }).on('error', (err) => {
+                console.warn('[keep-alive] erro no ping:', err.message);
+            });
+        }, 14 * 60 * 1000);
+    }
 });
 
 server.use((req: Request, res: Response) => {
