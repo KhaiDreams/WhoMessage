@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
 
 export const avatarUpload = multer({
   storage: multer.memoryStorage(),
