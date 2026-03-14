@@ -15,7 +15,8 @@ export const createFeedback = async (req: Request, res: Response) => {
     });
     res.status(201).json({ message: 'Feedback enviado com sucesso!', feedback });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao enviar feedback.', error });
+    console.error('Create feedback error:', error);
+    res.status(500).json({ message: 'Erro ao enviar feedback.' });
   }
 };
 
@@ -41,6 +42,7 @@ export const listFeedbacks = async (req: Request, res: Response) => {
       totalPages: Math.ceil(count / limit),
     });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao buscar feedbacks.', error });
+    console.error('List feedbacks error:', error);
+    res.status(500).json({ message: 'Erro ao buscar feedbacks.' });
   }
 };
