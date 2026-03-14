@@ -102,6 +102,14 @@ class SocketService {
       });
 
       socket.on('send_message', async (data) => {
+        if (!data || typeof data.content !== 'string' || data.content.trim().length === 0) {
+          socket.emit('error', { message: 'Conteúdo da mensagem inválido.' });
+          return;
+        }
+        if (data.content.length > 5000) {
+          socket.emit('error', { message: 'Mensagem muito longa. Máximo de 5000 caracteres.' });
+          return;
+        }
         await this.handleSendMessage(socket, data);
       });
 
