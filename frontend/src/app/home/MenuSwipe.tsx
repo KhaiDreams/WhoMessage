@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRecommendations } from "../../hooks/useRecommendations";
 import { reportsAPI } from "../../lib/api";
 import { toast } from "react-toastify";
@@ -190,27 +190,25 @@ export default function MenuSwipe() {
     document.addEventListener('mouseup', onUp);
   };
 
-  // handleSwipeRef — permite que o listener nativo (useEffect abaixo) sempre
-  // acesse a versão mais recente de handleSwipe sem fechar sobre estado stale.
+  // handleSwipeRef — sempre aponta para a versão mais recente de handleSwipe.
   const handleSwipeRef = useRef<(dir: 'left' | 'right') => void>(() => {});
   handleSwipeRef.current = handleSwipe;
 
-  // Touch events com listener NATIVO não-passivo — essencial para poder chamar
-  // e.preventDefault() e evitar concorrência com o scroll nativo do browser.
-  // onTouchMove do React é passivo por padrão e não pode bloquear o scroll.
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
+  // snapBackRef — mesma razão: evita stale closure nos handlers de touch.
+  const snapBackRef = useRef(snapBack);
+  snapBackRef.current = snapBack;
 
-    const onStart = (e: TouchEvent) => {
+  // Handlers com identidade estável (objeto criado uma única vez via useRef).
+  // Todos os valores internos lidos em runtime são refs → sem stale closure.
+  const touchHandlers = useRef({
+    onStart(e: TouchEvent) {
       if (isAnimatingRef.current) return;
       gestureRef.current = 'none';
       const t = e.touches[0];
       startPos.current = { x: t.clientX, y: t.clientY };
       lastTouchYRef.current = t.clientY;
-    };
-
-    const onMove = (e: TouchEvent) => {
+    },
+    onMove(e: TouchEvent) {
       if (isAnimatingRef.current) return;
       const t = e.touches[0];
       const dx = t.clientX - startPos.current.x;
@@ -222,44 +220,48 @@ export default function MenuSwipe() {
         if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
           gestureRef.current = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
         }
-        // Bloqueia qualquer default durante a fase de detecção
         e.preventDefault();
         return;
       }
 
       if (gestureRef.current === 'horizontal') {
-        // Impede scroll nativo ao arrastar horizontalmente
         e.preventDefault();
         dragXRef.current = dx;
         applyTransform(dx);
       } else if (scrollContainerRef.current) {
-        // Scroll vertical manual — preventDefault evita conflito com scroll nativo
         e.preventDefault();
         scrollContainerRef.current.scrollTop += moveDY;
       }
-    };
-
-    const onEnd = () => {
+    },
+    onEnd() {
       if (gestureRef.current === 'horizontal') {
         if (Math.abs(dragXRef.current) > 80) {
           handleSwipeRef.current(dragXRef.current > 0 ? 'right' : 'left');
         } else {
-          snapBack();
+          snapBackRef.current();
         }
       }
       gestureRef.current = 'none';
-    };
+    },
+  });
 
-    el.addEventListener('touchstart', onStart, { passive: false });
-    el.addEventListener('touchmove', onMove, { passive: false });
-    el.addEventListener('touchend', onEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchmove', onMove);
-      el.removeEventListener('touchend', onEnd);
-    };
-  }, []); // todos os valores usados são refs — sem risco de stale closure
+  // Callback ref: chamado pelo React quando o card entra/sai do DOM.
+  // Elimina a necessidade de useEffect + deps array — sem problemas de tamanho.
+  const setCardRef = useCallback((el: HTMLDivElement | null) => {
+    const { onStart, onMove, onEnd } = touchHandlers.current;
+    const prev = (cardRef as React.MutableRefObject<HTMLDivElement | null>).current;
+    if (prev) {
+      prev.removeEventListener('touchstart', onStart);
+      prev.removeEventListener('touchmove', onMove);
+      prev.removeEventListener('touchend', onEnd);
+    }
+    (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    if (el) {
+      el.addEventListener('touchstart', onStart, { passive: false });
+      el.addEventListener('touchmove', onMove, { passive: false });
+      el.addEventListener('touchend', onEnd, { passive: true });
+    }
+  }, []);
 
   // Função para abrir modal de report
   const handleReportClick = () => {
@@ -335,7 +337,7 @@ export default function MenuSwipe() {
     <div className="flex flex-col items-center px-4 py-2" style={{ height: 'calc(100dvh - 128px)', overflow: 'hidden' }}>
       <div className="relative w-full max-w-sm flex flex-col" style={{ height: '100%' }}>
         <div
-          ref={cardRef}
+          ref={setCardRef}
           className="relative bg-card rounded-2xl shadow-2xl border border-card-border flex flex-col flex-1 min-h-0 cursor-grab active:cursor-grabbing"
           style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', willChange: 'transform' } as React.CSSProperties}
           onMouseDown={handleMouseDown}
