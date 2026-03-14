@@ -167,3 +167,13 @@ export const reportSchema = Joi.object({
       'string.max': 'Descrição deve ter no máximo 1000 caracteres'
     })
 });
+
+export const listReportsQuerySchema = Joi.object({
+  status: Joi.string()
+    .valid('pending', 'reviewed', 'resolved', 'dismissed')
+    .optional(),
+  page: Joi.number().integer().min(1).max(1000).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  search: Joi.string().max(200).allow('').optional(),
+  banned: Joi.string().valid('true', 'false').optional()
+});
