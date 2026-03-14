@@ -1,10 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
 import ProtectedLayout from "./protected-layout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Faz o teclado virtual redimensionar o layout viewport em vez de sobrepor.
+  // Isso garante que h-dvh encolhe corretamente quando o teclado abre,
+  // eliminando o scroll externo e o gap que aparece ao fechar o teclado.
+  interactiveWidget: 'resizes-content',
+};
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
