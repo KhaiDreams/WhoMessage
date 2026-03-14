@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as ApiController from '../controllers/Users/userController';
+import { avatarUpload, uploadAvatar } from '../controllers/Users/uploadController';
 import { AuthMiddleware } from '../middlewares/auth';
 import { authLimiter, passwordChangeLimiter } from '../middlewares/rateLimiter';
 import { validateRequest, validateParams, validateQuery } from '../middlewares/validation';
@@ -22,6 +23,7 @@ router.post('/auth/login', authLimiter, validateRequest(loginSchema), ApiControl
 // User management (requires authentication via token)
 router.get('/users/:id', AuthMiddleware, validateParams(userIdSchema), ApiController.listUserbyId);
 router.put('/users/:id', AuthMiddleware, requireSelfOrAdmin, validateParams(userIdSchema), validateRequest(updateUserSchema), ApiController.updateUser);
+router.post('/users/upload-avatar', AuthMiddleware, avatarUpload.single('avatar'), uploadAvatar);
 router.post('/users/nicknames', AuthMiddleware, validateRequest(addNicknamesSchema), ApiController.addNicknames);
 router.post('/users/change-password', passwordChangeLimiter, AuthMiddleware, validateRequest(changePasswordSchema), ApiController.changePassword);
 
