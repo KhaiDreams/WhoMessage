@@ -28,7 +28,8 @@ export const addTagsInterests = async (req: Request, res: Response) => {
         }
         res.status(201).json(tag);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add interests', details: err });
+        console.error('Add interests error:', err);
+        res.status(500).json({ error: 'Erro ao salvar interesses.' });
     }
 };
 
@@ -50,7 +51,8 @@ export const addTagsGames = async (req: Request, res: Response) => {
         }
         res.status(201).json(tag);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add games', details: err });
+        console.error('Add games error:', err);
+        res.status(500).json({ error: 'Erro ao salvar jogos.' });
     }
 };
 
@@ -59,7 +61,8 @@ export const getAllTagsInterests = async (req: Request, res: Response) => {
         const tags = await PreTagsInterests.findAll();
         res.json(tags);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch interests', details: err });
+        console.error('Fetch interests error:', err);
+        res.status(500).json({ error: 'Erro ao buscar interesses.' });
     }
 };
 
@@ -68,7 +71,8 @@ export const getAllTagsGames = async (req: Request, res: Response) => {
         const tags = await PreTagsGames.findAll();
         res.json(tags);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch games', details: err });
+        console.error('Fetch games error:', err);
+        res.status(500).json({ error: 'Erro ao buscar jogos.' });
     }
 };
 
@@ -78,7 +82,8 @@ export const getUserTagsInterests = async (req: Request, res: Response) => {
         const tag = await TagsInterests.findOne({ where: { user_id: userId } });
         res.json(tag || {});
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch user interests', details: err });
+        console.error('Fetch user interests error:', err);
+        res.status(500).json({ error: 'Erro ao buscar interesses do usuário.' });
     }
 };
 
@@ -88,7 +93,8 @@ export const getUserTagsGames = async (req: Request, res: Response) => {
         const tag = await TagsGames.findOne({ where: { user_id: userId } });
         res.json(tag || {});
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch user games', details: err });
+        console.error('Fetch user games error:', err);
+        res.status(500).json({ error: 'Erro ao buscar jogos do usuário.' });
     }
 };
 
@@ -141,7 +147,8 @@ export const addOrUpdateNicknames = async (req: Request, res: Response) => {
         }
         res.status(201).json(nickname);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add/update nicknames', details: err });
+        console.error('Nicknames error:', err);
+        res.status(500).json({ error: 'Erro ao salvar nicknames.' });
     }
 };
 
@@ -151,7 +158,8 @@ export const getUserNicknames = async (req: Request, res: Response) => {
         const nickname = await Nicknames.findOne({ where: { user_id: userId } });
         res.json(nickname || {});
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch user nicknames', details: err });
+        console.error('Fetch nicknames error:', err);
+        res.status(500).json({ error: 'Erro ao buscar nicknames.' });
     }
 };
 
@@ -342,7 +350,7 @@ export const getRecommendations = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Recommendation error:', err);
-        res.status(500).json({ error: 'Failed to fetch recommendations', details: err });
+        res.status(500).json({ error: 'Erro ao buscar recomendações.' });
     }
 };
 
@@ -381,7 +389,7 @@ export const getUserGamesByUserId = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Error fetching user games:', err);
-        res.status(500).json({ error: 'Failed to fetch user games', details: err });
+        res.status(500).json({ error: 'Erro ao buscar jogos do usuário.' });
     }
 };
 
@@ -420,6 +428,6 @@ export const getUserInterestsByUserId = async (req: Request, res: Response) => {
         });
     } catch (err) {
         console.error('Error fetching user interests:', err);
-        res.status(500).json({ error: 'Failed to fetch user interests', details: err });
+        res.status(500).json({ error: 'Erro ao buscar interesses do usuário.' });
     }
 };

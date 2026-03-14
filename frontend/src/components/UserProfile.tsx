@@ -28,8 +28,8 @@ interface UnmatchModalProps {
 
 const UnmatchModal = ({ user, onClose, onConfirm, isLoading }: UnmatchModalProps) => {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-      <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md border border-card-border">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md border border-card-border">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-card-border/50">
           <h3 className="text-lg font-bold text-foreground">Desfazer Match</h3>
@@ -109,13 +109,13 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const reportReasons = [
-    'Comportamento inapropriado',
-    'Assédio ou bullying',
-    'Spam ou conteúdo comercial',
-    'Perfil falso',
-    'Conteúdo ofensivo',
-    'Outros'
+  const reportReasons: { label: string; value: string }[] = [
+    { label: 'Comportamento inapropriado', value: 'inappropriate_content' },
+    { label: 'Assédio ou bullying', value: 'harassment' },
+    { label: 'Spam ou conteúdo comercial', value: 'spam' },
+    { label: 'Perfil falso', value: 'fake_profile' },
+    { label: 'Conteúdo ofensivo', value: 'inappropriate_content' },
+    { label: 'Outros', value: 'other' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,8 +138,8 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md border border-card-border">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md border border-card-border">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-card-border/50">
           <h3 className="text-lg font-bold text-foreground">Denunciar usuário</h3>
@@ -181,7 +181,7 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
             >
               <option value="" className="bg-input-bg text-input-text">Selecione um motivo</option>
               {reportReasons.map((r, index) => (
-                <option key={index} value={r} className="bg-input-bg text-input-text">{r}</option>
+                <option key={index} value={r.value} className="bg-input-bg text-input-text">{r.label}</option>
               ))}
             </select>
           </div>
@@ -339,8 +339,8 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-card-border">
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-card rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-card-border">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-foreground/60">Carregando perfil...</p>
@@ -352,8 +352,8 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
 
   if (!user) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-card-border">
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-card rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-card-border">
           <div className="text-center">
             <p className="text-foreground/60 mb-4">Erro ao carregar perfil</p>
             <div className="flex gap-3 justify-center">
@@ -377,8 +377,8 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-card-border">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-card-border">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-card-border/50">
           <h2 className="text-xl font-bold text-foreground">

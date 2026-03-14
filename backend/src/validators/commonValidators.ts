@@ -87,6 +87,19 @@ export const interactionSchema = Joi.object({
 });
 
 // Validação para notificações
+export const matchIdSchema = Joi.object({
+  matchId: Joi.number()
+    .integer()
+    .positive()
+    .required()
+    .messages({
+      'number.base': 'ID do match deve ser um número',
+      'number.integer': 'ID do match deve ser um número inteiro',
+      'number.positive': 'ID do match deve ser positivo',
+      'any.required': 'ID do match é obrigatório'
+    })
+});
+
 export const notificationIdSchema = Joi.object({
   notificationId: Joi.number()
     .integer()
@@ -166,4 +179,14 @@ export const reportSchema = Joi.object({
     .messages({
       'string.max': 'Descrição deve ter no máximo 1000 caracteres'
     })
+});
+
+export const listReportsQuerySchema = Joi.object({
+  status: Joi.string()
+    .valid('pending', 'reviewed', 'resolved', 'dismissed')
+    .optional(),
+  page: Joi.number().integer().min(1).max(1000).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20),
+  search: Joi.string().max(200).allow('').optional(),
+  banned: Joi.string().valid('true', 'false').optional()
 });

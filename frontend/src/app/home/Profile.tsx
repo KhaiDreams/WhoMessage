@@ -15,6 +15,7 @@ interface ProfileProps {
 function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: ProfileProps) {
   const [edit, setEdit] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [editSection, setEditSection] = useState<'info' | 'games' | 'interests'>('info');
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [gamesList, setGamesList] = useState<Tag[]>([]);
@@ -24,7 +25,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
   
   const [formData, setFormData] = useState({
     username: user.username,
-    age: user.age,
+    age: String(user.age),
     bio: user.bio || '',
     pfp: user.pfp || '',
     newNickname: ''
@@ -48,7 +49,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
   useEffect(() => {
     setFormData({
       username: user.username,
-      age: user.age,
+      age: String(user.age),
       bio: user.bio || '',
       pfp: user.pfp || '',
       newNickname: ''
@@ -124,12 +125,22 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     setLoading(true);
     try {
       // Preparar dados do usuário
+      const parsedAge = parseInt(formData.age);
+      if (!parsedAge || parsedAge < 14 || parsedAge > 99) {
+        toast.error('Idade inválida. Insira um valor entre 14 e 99.');
+        setLoading(false);
+        return;
+      }
       const updateData: any = {
         id: user.id,
-        age: formData.age,
+        age: parsedAge,
         bio: formData.bio,
-        pfp: formData.pfp
       };
+
+      // Só inclui pfp se o usuário realmente trocou a foto
+      if (formData.pfp !== (user.pfp || '')) {
+        updateData.pfp = formData.pfp;
+      }
 
       // Se há um novo nickname, adicionar ao array
       if (formData.newNickname && formData.newNickname.trim()) {
@@ -205,326 +216,348 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
   };
 
   return (
-    <div className="h-full max-w-4xl mx-auto flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8 border border-card-border">
-        <div className="text-center">
-          {/* Avatar */}
-          <div className="relative mb-6 inline-block">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl">
-              {formData.pfp ? (
-                <img 
-                  src={formData.pfp} 
-                  alt="Avatar" 
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ) : (
-                <Gamepad2 className="w-16 h-16 md:w-20 md:h-20 text-primary/60" />
-              )}
-            </div>
-            {edit && (
-              <label className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 cursor-pointer hover:bg-primary-dark transition-colors shadow-lg">
-                <Camera className="w-4 h-4" />
-                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              </label>
-            )}
-          </div>
+      <div className="min-h-full max-w-4xl mx-auto flex items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-card rounded-2xl shadow-2xl p-6 border border-card-border">
 
-          {edit ? (
-            <div className="space-y-6">
-              {/* Informações básicas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+        {edit ? (
+          /* Modo edição — por seções */
+          <div className="space-y-4">
+            {/* Navegação por seções */}
+            <div className="flex rounded-xl bg-background/40 border border-card-border p-1 gap-1">
+              {([
+                { key: 'info' as const, label: 'Perfil' },
+                { key: 'games' as const, label: `Jogos (${selectedGames.length})` },
+                { key: 'interests' as const, label: `Interesses (${selectedInterests.length})` },
+              ]).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setEditSection(key)}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                    editSection === key
+                      ? 'bg-primary text-white shadow'
+                      : 'text-foreground/60 hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Seção: Perfil */}
+            {editSection === 'info' && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl overflow-hidden">
+                      {formData.pfp ? (
+                        <img src={formData.pfp} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <Gamepad2 className="w-12 h-12 text-primary/60" />
+                      )}
+                    </div>
+                    <label className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 cursor-pointer hover:bg-primary-dark transition-colors shadow-lg">
+                      <Camera className="w-4 h-4" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
                   <label className="block text-sm font-medium text-foreground/70">Nome de usuário (fixo)</label>
-                  <input 
-                    className="w-full px-4 py-3 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-400 cursor-not-allowed" 
-                    value={formData.username} 
+                  <input
+                    className="w-full px-4 py-3 rounded-lg bg-card/50 border border-card-border text-foreground/40 cursor-not-allowed"
+                    value={formData.username}
                     disabled
                     readOnly
                     title="O nome de usuário não pode ser alterado"
                   />
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-1">
                   <label className="block text-sm font-medium text-foreground/70">Idade</label>
-                  <input 
-                    className="w-full px-4 py-3 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500" 
-                    value={formData.age} 
-                    type="number" 
+                  <input
+                    className="w-full px-4 py-3 rounded-lg bg-card border border-card-border focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-foreground placeholder-foreground/40 transition-colors"
+                    value={formData.age}
+                    type="number"
                     min="14"
                     max="99"
-                    onChange={e => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) || 18 }))}
+                    onChange={e => setFormData(prev => ({ ...prev, age: e.target.value }))}
                     placeholder="Sua idade"
                   />
                 </div>
-              </div>
 
-              {/* Campo para novo nickname */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground/70">
-                  Nickname atual: {user.nicknames && user.nicknames.length > 0 ? user.nicknames[user.nicknames.length - 1] : 'Nenhum'}
-                </label>
-                <input 
-                  className="w-full px-4 py-3 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500" 
-                  value={formData.newNickname || ''} 
-                  onChange={e => setFormData(prev => ({ ...prev, newNickname: e.target.value }))}
-                  placeholder="Digite um novo nickname (opcional)"
-                  maxLength={50}
-                />
-                {user.nicknames && user.nicknames.length > 0 && (
-                  <div className="text-xs text-foreground/50">
-                    Histórico de nicknames: {user.nicknames.join(', ')}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground/70">Sobre mim</label>
-                <textarea 
-                  className="w-full px-4 py-3 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 resize-none transition-all hover:border-slate-500" 
-                  value={formData.bio} 
-                  onChange={e => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Conte um pouco sobre você..."
-                  rows={3}
-                  maxLength={300}
-                />
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-foreground/50">
-                    {formData.bio.length}/300 caracteres
-                  </span>
-                </div>
-              </div>
-
-              {/* Seção de Jogos */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Gamepad2 className="w-5 h-5" /> <span>Meus Jogos</span>
-                  </h3>
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    selectedGames.length >= 3 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}>
-                    {selectedGames.length}/20 {selectedGames.length >= 3 ? <Check className="w-3 h-3 inline" /> : `(min. 3)`}
-                  </span>
-                </div>
-                <div className="relative">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-foreground/70">
+                    Nickname
+                    {user.nicknames && user.nicknames.length > 0 && (
+                      <span className="ml-2 text-xs text-foreground/40">atual: @{user.nicknames[user.nicknames.length - 1]}</span>
+                    )}
+                  </label>
                   <input
-                    className="w-full px-4 py-3 pl-10 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500"
-                    placeholder="Buscar jogos..."
-                    value={gameSearch}
-                    onChange={(e) => setGameSearch(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-card border border-card-border focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-foreground placeholder-foreground/40 transition-colors"
+                    value={formData.newNickname || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, newNickname: e.target.value }))}
+                    placeholder="Novo nickname (opcional)"
+                    maxLength={50}
                   />
                 </div>
-                <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-700/50 rounded-lg p-4 bg-slate-800/30">
+
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-foreground/70">Sobre mim</label>
+                  <textarea
+                    className="w-full px-4 py-3 rounded-lg bg-card border border-card-border focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-foreground placeholder-foreground/40 resize-none transition-colors"
+                    value={formData.bio}
+                    onChange={e => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                    placeholder="Conte um pouco sobre você..."
+                    rows={3}
+                    maxLength={300}
+                  />
+                  <p className="text-xs text-foreground/40 text-right">{formData.bio.length}/300</p>
+                </div>
+              </div>
+            )}
+
+            {/* Seção: Jogos */}
+            {editSection === 'games' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Gamepad2 className="w-4 h-4" /> Meus Jogos
+                  </h3>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    selectedGames.length >= 3
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  }`}>
+                    {selectedGames.length}/20 {selectedGames.length < 3 ? '(min. 3)' : '✓'}
+                  </span>
+                </div>
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg bg-card border border-card-border focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-foreground placeholder-foreground/40 transition-colors text-sm"
+                  placeholder="Buscar jogos..."
+                  value={gameSearch}
+                  onChange={e => setGameSearch(e.target.value)}
+                />
+                <div className="h-72 overflow-y-auto space-y-1.5 rounded-xl border border-card-border p-2 bg-background/20">
                   {filteredGames.map(game => (
-                    <div 
-                      key={game.id} 
-                      className={`p-3 rounded-lg cursor-pointer transition-all border hover:scale-[1.02] ${
-                        selectedGames.includes(game.id)
-                          ? 'bg-primary/20 border-primary/50 shadow-lg'
-                          : 'bg-slate-800/50 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50'
-                      }`}
+                    <button
+                      key={game.id}
                       onClick={() => toggleGame(game.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        selectedGames.includes(game.id)
+                          ? 'bg-primary/20 text-primary border border-primary/40'
+                          : 'text-foreground/80 hover:bg-background/60 border border-transparent'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{game.name}</span>
-                        {selectedGames.includes(game.id) && <Check className="w-4 h-4 text-primary" />}
-                      </div>
-                    </div>
+                      <span>{game.name}</span>
+                      {selectedGames.includes(game.id) && <Check className="w-4 h-4 flex-shrink-0" />}
+                    </button>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Seção de Interesses */}
-              <div className="space-y-4">
+            {/* Seção: Interesses */}
+            {editSection === 'interests' && (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Heart className="w-5 h-5" /> <span>Meus Interesses</span>
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Heart className="w-4 h-4" /> Meus Interesses
                   </h3>
-                  <span className={`text-sm px-3 py-1 rounded-full ${
-                    selectedInterests.length >= 3 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    selectedInterests.length >= 3
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                       : 'bg-red-500/20 text-red-400 border border-red-500/30'
                   }`}>
-                    {selectedInterests.length}/10 {selectedInterests.length >= 3 ? <Check className="w-3 h-3 inline" /> : `(min. 3)`}
+                    {selectedInterests.length}/10 {selectedInterests.length < 3 ? '(min. 3)' : '✓'}
                   </span>
                 </div>
-                <div className="relative">
-                  <input
-                    className="w-full px-4 py-3 pl-10 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500"
-                    placeholder="Buscar interesses..."
-                    value={interestSearch}
-                    onChange={(e) => setInterestSearch(e.target.value)}
-                  />
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-700/50 rounded-lg p-4 bg-slate-800/30">
+                <input
+                  className="w-full px-4 py-2.5 rounded-lg bg-card border border-card-border focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-foreground placeholder-foreground/40 transition-colors text-sm"
+                  placeholder="Buscar interesses..."
+                  value={interestSearch}
+                  onChange={e => setInterestSearch(e.target.value)}
+                />
+                <div className="h-72 overflow-y-auto space-y-1.5 rounded-xl border border-card-border p-2 bg-background/20">
                   {filteredInterests.map(interest => (
-                    <div 
-                      key={interest.id} 
-                      className={`p-3 rounded-lg cursor-pointer transition-all border hover:scale-[1.02] ${
-                        selectedInterests.includes(interest.id)
-                          ? 'bg-accent/20 border-accent/50 shadow-lg'
-                          : 'bg-slate-800/50 border-slate-600/30 hover:bg-slate-700/50 hover:border-slate-500/50'
-                      }`}
+                    <button
+                      key={interest.id}
                       onClick={() => toggleInterest(interest.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        selectedInterests.includes(interest.id)
+                          ? 'bg-accent/20 text-accent border border-accent/40'
+                          : 'text-foreground/80 hover:bg-background/60 border border-transparent'
+                      }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{interest.name}</span>
-                        {selectedInterests.includes(interest.id) && <Check className="w-4 h-4 text-accent" />}
-                      </div>
-                    </div>
+                      <span>{interest.name}</span>
+                      {selectedInterests.includes(interest.id) && <Check className="w-4 h-4 flex-shrink-0" />}
+                    </button>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Botões de ação */}
-              <div className="flex gap-4 pt-4">
-                <button 
-                  onClick={handleSave}
-                  disabled={loading || selectedGames.length < 3 || selectedInterests.length < 3}
-                  className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Salvando...
-                    </div>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Salvar Alterações</span>
-                  )}
-                </button>
-                <button 
-                  onClick={() => setEdit(false)}
-                  className="px-6 py-3 rounded-lg border border-slate-600/50 text-foreground hover:bg-slate-700/50 transition-all duration-200 font-semibold flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" /> Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Modo visualização */
-            <div className="space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                  {user.nicknames && user.nicknames.length > 0 
-                    ? user.nicknames[user.nicknames.length - 1] 
-                    : formData.username}
-                </h2>
-                {user.nicknames && user.nicknames.length > 0 && (
-                  <p className="text-sm text-foreground/60 mb-3">
-                    @{formData.username}
-                  </p>
+            {/* Salvar / Cancelar */}
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={handleSave}
+                disabled={loading || selectedGames.length < 3 || selectedInterests.length < 3}
+                className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  <><Save className="w-4 h-4" /> Salvar</>
                 )}
-                <div className="inline-flex items-center gap-2 bg-background/30 rounded-full px-4 py-2 border border-card-border/50">
-                  <Cake className="w-4 h-4 text-foreground/60" />
-                  <span className="text-foreground font-medium">{formData.age} anos</span>
-                </div>
-              </div>
-              
-              {formData.bio && (
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5" /> <span>Sobre mim</span>
-                  </h3>
-                  <p className="text-foreground/80 leading-relaxed bg-background/30 p-4 rounded-lg border border-card-border/50 italic">
-                    "{formData.bio}"
-                  </p>
-                </div>
-              )}
-              
-              <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Gamepad2 className="w-5 h-5" /> Jogos Favoritos
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {userGames.length > 0 ? (
-                    userGames.map((game) => (
-                      <span 
-                        key={game.id} 
-                        className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm border border-primary/30 backdrop-blur-sm"
-                      >
-                        {game.name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-foreground/60 text-sm">Nenhum jogo selecionado</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Heart className="w-5 h-5" /> Interesses
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {userInterests.length > 0 ? (
-                    userInterests.map((interest) => (
-                      <span 
-                        key={interest.id} 
-                        className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm border border-accent/30 backdrop-blur-sm"
-                      >
-                        {interest.name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-foreground/60 text-sm">Nenhum interesse selecionado</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <AtSign className="w-5 h-5" /> Nicknames
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {user.nicknames && user.nicknames.length > 0 ? (
-                    user.nicknames.map((nickname, index) => (
-                      <span 
-                        key={index} 
-                        className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm border border-primary/30 backdrop-blur-sm"
-                      >
-                        @{nickname}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-foreground/60 text-sm">Nenhum nickname cadastrado</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-3 pt-4">
-                <button 
-                  onClick={() => setEdit(true)}
-                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
-                >
-                  <Pencil className="w-4 h-4" /> Editar perfil
-                </button>
-                <button 
-                  onClick={() => setShowPasswordChange(true)}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-4 h-4" /> Alterar senha
-                </button>
-                <button 
-                  onClick={() => {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('whomessage_tutorial_completed');
-                    window.location.href = '/login';
-                  }}
-                  className="w-full bg-red-500/90 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors shadow-lg backdrop-blur-sm flex items-center justify-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" /> Sair
-                </button>
+              </button>
+              <button
+                onClick={() => setEdit(false)}
+                className="px-5 py-3 rounded-lg border border-card-border text-foreground hover:bg-background/40 transition-colors font-semibold flex items-center gap-2"
+              >
+                <X className="w-4 h-4" /> Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Modo visualização */
+          <div className="text-center space-y-6">
+            <div className="relative mb-2 inline-block">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl overflow-hidden">
+                {formData.pfp ? (
+                  <img
+                    src={formData.pfp}
+                    alt="Avatar"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <Gamepad2 className="w-16 h-16 md:w-20 md:h-20 text-primary/60" />
+                )}
               </div>
             </div>
-          )}
-        </div>
+
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                {user.nicknames && user.nicknames.length > 0
+                  ? user.nicknames[user.nicknames.length - 1]
+                  : formData.username}
+              </h2>
+              {user.nicknames && user.nicknames.length > 0 && (
+                <p className="text-sm text-foreground/60 mb-3">
+                  @{formData.username}
+                </p>
+              )}
+              <div className="inline-flex items-center gap-2 bg-background/30 rounded-full px-4 py-2 border border-card-border/50">
+                <Cake className="w-4 h-4 text-foreground/60" />
+                <span className="text-foreground font-medium">{parseInt(formData.age) || user.age} anos</span>
+              </div>
+            </div>
+
+            {formData.bio && (
+              <div className="text-left">
+                <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" /> <span>Sobre mim</span>
+                </h3>
+                <p className="text-foreground/80 leading-relaxed bg-background/30 p-4 rounded-lg border border-card-border/50 italic">
+                  "{formData.bio}"
+                </p>
+              </div>
+            )}
+
+            <div className="text-left">
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Gamepad2 className="w-5 h-5" /> Jogos Favoritos
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {userGames.length > 0 ? (
+                  userGames.map((game) => (
+                    <span
+                      key={game.id}
+                      className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm border border-primary/30"
+                    >
+                      {game.name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-foreground/60 text-sm">Nenhum jogo selecionado</span>
+                )}
+              </div>
+            </div>
+
+            <div className="text-left">
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Heart className="w-5 h-5" /> Interesses
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {userInterests.length > 0 ? (
+                  userInterests.map((interest) => (
+                    <span
+                      key={interest.id}
+                      className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm border border-accent/30"
+                    >
+                      {interest.name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-foreground/60 text-sm">Nenhum interesse selecionado</span>
+                )}
+              </div>
+            </div>
+
+            <div className="text-left">
+              <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <AtSign className="w-5 h-5" /> Nicknames
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {user.nicknames && user.nicknames.length > 0 ? (
+                  user.nicknames.map((nickname, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm border border-primary/30"
+                    >
+                      @{nickname}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-foreground/60 text-sm">Nenhum nickname cadastrado</span>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-4">
+              <button
+                onClick={() => { setEditSection('info'); setEdit(true); }}
+                className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
+              >
+                <Pencil className="w-4 h-4" /> Editar perfil
+              </button>
+              <button
+                onClick={() => setShowPasswordChange(true)}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" /> Alterar senha
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('whomessage_tutorial_completed');
+                  window.location.href = '/login';
+                }}
+                className="w-full bg-red-500/90 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors shadow-lg flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" /> Sair
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de alterar senha */}
       {showPasswordChange && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md border border-card-border">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-2xl shadow-2xl p-6 w-full max-w-md border border-card-border">
             <div className="text-center mb-6">
               <h3 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2"><Lock className="w-5 h-5" /> Alterar Senha</h3>
               <p className="text-foreground/60 text-sm">Digite sua senha atual e a nova senha</p>

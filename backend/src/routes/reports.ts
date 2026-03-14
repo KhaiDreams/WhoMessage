@@ -2,9 +2,9 @@ import { Router } from 'express';
 import * as ReportController from '../controllers/Reports/reportController';
 import { AuthMiddleware } from '../middlewares/auth';
 import { reportLimiter } from '../middlewares/rateLimiter';
-import { validateRequest, validateParams } from '../middlewares/validation';
+import { validateRequest, validateParams, validateQuery } from '../middlewares/validation';
 import { requireAdmin } from '../middlewares/adminAuth';
-import { reportSchema, userIdSchema } from '../validators/commonValidators';
+import { reportSchema, userIdSchema, listReportsQuerySchema } from '../validators/commonValidators';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ const router = Router();
 router.post('/reports', reportLimiter, AuthMiddleware, validateRequest(reportSchema), ReportController.createReport);
 
 // Rotas para administradores (com validação de admin)
-router.get('/admin/reports', AuthMiddleware, requireAdmin, ReportController.listReports);
+router.get('/admin/reports', AuthMiddleware, requireAdmin, validateQuery(listReportsQuerySchema), ReportController.listReports);
 router.get('/admin/reports/stats', AuthMiddleware, requireAdmin, ReportController.getReportsStats);
 router.put('/admin/reports/:id/status', AuthMiddleware, requireAdmin, validateParams(userIdSchema), ReportController.updateReportStatus);
 router.post('/admin/reports/:id/ban', AuthMiddleware, requireAdmin, validateParams(userIdSchema), ReportController.banUserFromReport);

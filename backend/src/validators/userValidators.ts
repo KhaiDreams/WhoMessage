@@ -51,12 +51,13 @@ export const registerSchema = Joi.object({
       'string.max': 'A descrição (bio) não pode ter mais que 300 caracteres'
     }),
   
-  pfp: Joi.string().uri().allow('').optional(),
-  
+  pfp: Joi.alternatives().try(
+    Joi.string().uri({ scheme: ['http', 'https'] }),
+    Joi.string().pattern(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/)
+  ).allow('').optional(),
+
   nicknames: Joi.array().items(Joi.string().trim()).optional(),
-  active: Joi.boolean().optional(),
-  is_admin: Joi.boolean().optional(),
-  ban: Joi.boolean().optional()
+  active: Joi.boolean().optional()
 });
 
 // Schema para login
@@ -105,14 +106,7 @@ export const updateUserSchema = Joi.object({
       'string.min': 'O username deve ter pelo menos 3 caracteres',
       'string.max': 'O username deve ter no máximo 30 caracteres'
     }),
-  
-  email: Joi.string()
-    .email()
-    .optional()
-    .messages({
-      'string.email': 'Email deve ter um formato válido'
-    }),
-  
+
   age: Joi.number()
     .integer()
     .min(14)
@@ -122,7 +116,7 @@ export const updateUserSchema = Joi.object({
       'number.min': 'Você precisa ter a idade mínima de 14 anos',
       'number.max': 'Idade máxima permitida é 99 anos'
     }),
-  
+
   bio: Joi.string()
     .max(300)
     .allow('')
@@ -130,8 +124,11 @@ export const updateUserSchema = Joi.object({
     .messages({
       'string.max': 'A descrição (bio) não pode ter mais que 300 caracteres'
     }),
-  
-  pfp: Joi.string().uri().allow('').optional(),
+
+  pfp: Joi.alternatives().try(
+    Joi.string().uri({ scheme: ['http', 'https'] }),
+    Joi.string().pattern(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/)
+  ).allow('').optional(),
   
   nicknames: Joi.array().items(
     Joi.string()
