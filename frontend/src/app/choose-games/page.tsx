@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { tagsAPI } from '@/lib/api';
 import Image from 'next/image';
+import { Search, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 export default function ChooseGames() {
   const [games, setGames] = useState<any[]>([]);
@@ -168,50 +169,70 @@ export default function ChooseGames() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <main className="flex flex-col gap-8 items-center w-full max-w-4xl bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
-        <Image
-          className="white:invert mb-2"
-          src="/assets/logo-removebg-preview.png"
-          alt="WhoMessage Logo"
-          width={220}
-          height={40}
-          priority
-        />
-        <h1 className="text-2xl font-bold text-foreground mb-2 text-center">Escolha seus jogos favoritos</h1>
-        <div className="flex flex-col sm:flex-row items-center justify-between w-full mb-4 gap-4">
-          <input
-            type="text"
-            placeholder="Pesquisar jogo ou categoria..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full sm:w-96 px-5 py-3 rounded-xl bg-[#23243a] border-0 text-white placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-accent shadow-md"
-            style={{ fontSize: '1.1rem', fontWeight: 500 }}
-          />
-          <div className="flex gap-2 items-center mt-2 sm:mt-0">
+    <div className="min-h-screen bg-background">
+      {/* Cabeçalho fixo */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-card-border px-4 py-3 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/assets/logo-removebg-preview.png"
+              alt="WhoMessage"
+              width={110}
+              height={20}
+              priority
+            />
+            <div className="hidden sm:block">
+              <h1 className="text-sm font-bold text-foreground">Jogos favoritos</h1>
+              <p className="text-xs text-foreground/50">Mín. 3 · máx. 20</p>
+            </div>
+          </div>
+          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${
+            selected.length >= 3
+              ? 'bg-green-500/20 text-green-400 border-green-500/30'
+              : 'bg-card text-foreground/60 border-card-border'
+          }`}>
+            {selected.length}/20 {selected.length >= 3 ? '✓' : '(mín. 3)'}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Pesquisar jogo ou categoria..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-card border border-card-border text-foreground placeholder-foreground/40 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none text-sm transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
             <button
               type="button"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-xl bg-[#181a20] text-foreground font-bold shadow border-0 disabled:opacity-40 hover:bg-[#23243a] transition"
+              className="p-2.5 rounded-lg bg-card border border-card-border text-foreground disabled:opacity-40 hover:border-primary/50 transition-colors"
             >
-              &lt;
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-base text-foreground/80 font-semibold">Página {page} de {totalPages}</span>
+            <span className="text-xs text-foreground/60 px-1.5 min-w-[52px] text-center font-medium">{page}/{totalPages}</span>
             <button
               type="button"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-xl bg-[#181a20] text-foreground font-bold shadow border-0 disabled:opacity-40 hover:bg-[#23243a] transition"
+              className="p-2.5 rounded-lg bg-card border border-card-border text-foreground disabled:opacity-40 hover:border-primary/50 transition-colors"
             >
-              &gt;
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
-          {paginatedGames.length === 0 && (
-            <div className="col-span-full text-center text-foreground/60 py-8">Nenhum jogo encontrado.</div>
-          )}
+      </div>
+
+      {/* Grid de jogos */}
+      <div className="px-4 pt-4 pb-28">
+        {paginatedGames.length === 0 && (
+          <div className="text-center text-foreground/60 py-12">Nenhum jogo encontrado.</div>
+        )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {paginatedGames.map(game => {
             const isSelected = selected.includes(game.id);
             return (
@@ -219,42 +240,63 @@ export default function ChooseGames() {
                 key={game.id}
                 type="button"
                 onClick={() => handleSelect(game.id)}
-                className={`relative flex flex-col items-center justify-between px-4 py-5 min-h-[180px] rounded-3xl font-semibold border-0 transition-[transform,box-shadow] duration-150 text-base shadow-xl focus:outline-none focus:ring-2 focus:ring-accent focus:z-10 bg-gradient-to-br from-[#23243a] to-[#181a20] hover:scale-[1.03] hover:shadow-2xl overflow-hidden
-                  ${isSelected ? 'ring-4 ring-pink-600 scale-105' : ''}
-                `}
-                aria-pressed={isSelected}
                 disabled={!isSelected && selected.length >= 20}
+                aria-pressed={isSelected}
+                className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-[transform,border-color,background-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 ${
+                  isSelected
+                    ? 'bg-primary/15 border-primary shadow-lg scale-[1.02]'
+                    : 'bg-card border-card-border hover:border-primary/50 hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100'
+                }`}
               >
-                <div className="w-full flex flex-col items-center mb-2">
-                  {game.image && (
-                    <img src={game.image} alt={game.name} className="w-16 h-16 object-cover rounded-2xl border-2 border-[#23243a] bg-card shadow-md" loading="lazy" decoding="async" />
+                {game.image ? (
+                  <img
+                    src={game.image}
+                    alt={game.name}
+                    className="w-14 h-14 object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">🎮</div>
+                )}
+                <div className="w-full text-center">
+                  <p className="text-xs font-semibold text-foreground leading-tight line-clamp-2">{game.name}</p>
+                  {game.category && (
+                    <p className="text-[10px] text-foreground/50 mt-0.5 truncate">{game.category}</p>
                   )}
                 </div>
-                <div className="flex flex-col items-center flex-1 min-w-0 w-full">
-                  <span className="text-lg font-bold leading-tight text-center truncate w-full" title={game.name}>{game.name}</span>
-                  {game.category && <span className="text-xs opacity-70 mt-1 text-center w-full truncate">{game.category}</span>}
-                </div>
                 {isSelected && (
-                  <span className="absolute top-2 right-2 bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10">✓</span>
+                  <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
                 )}
               </button>
             );
           })}
         </div>
-        {error && (
-          <div className="w-full text-center text-red-600 font-semibold mt-2 animate-pulse">{error}</div>
-        )}
+      </div>
+
+      {/* Barra inferior fixa */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-card-border px-4 py-3">
+        {error && <p className="text-red-500 text-xs text-center mb-2">{error}</p>}
         <button
           onClick={handleSubmit}
-          disabled={selected.length < 3 || selected.length > 20 || loading}
-          className="mt-4 w-full py-3 rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transition-all duration-200 ease-in-out tracking-wide text-lg border-none outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={selected.length < 3 || loading}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white font-bold shadow-lg transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <span className="flex items-center justify-center gap-2">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="inline-block"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
-            Confirmar
-          </span>
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Salvando...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+              Confirmar{selected.length >= 3 ? ` (${selected.length} jogos)` : ''}
+            </>
+          )}
         </button>
-      </main>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { tagsAPI } from '@/lib/api';
 import Image from 'next/image';
+import { Check } from 'lucide-react';
 
 export default function ChooseInterests() {
   const [interests, setInterests] = useState<any[]>([]);
@@ -126,18 +127,34 @@ export default function ChooseInterests() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <main className="flex flex-col gap-8 items-center w-full max-w-4xl bg-card rounded-2xl shadow-2xl p-8 border border-card-border">
-        <Image
-          className="white:invert mb-2"
-          src="/assets/logo-removebg-preview.png"
-          alt="WhoMessage Logo"
-          width={220}
-          height={40}
-          priority
-        />
-        <h1 className="text-2xl font-bold text-foreground mb-2 text-center">Escolha seus interesses</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+    <div className="min-h-screen bg-background">
+      {/* Cabeçalho fixo */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-card-border px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/assets/logo-removebg-preview.png"
+            alt="WhoMessage"
+            width={110}
+            height={20}
+            priority
+          />
+          <div>
+            <h1 className="text-sm font-bold text-foreground">Seus interesses</h1>
+            <p className="text-xs text-foreground/50">Mín. 3 · máx. 10</p>
+          </div>
+        </div>
+        <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${
+          selected.length >= 3
+            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+            : 'bg-card text-foreground/60 border-card-border'
+        }`}>
+          {selected.length}/10 {selected.length >= 3 ? '✓' : '(mín. 3)'}
+        </span>
+      </div>
+
+      {/* Chips de interesses */}
+      <div className="px-4 pt-6 pb-28">
+        <div className="flex flex-wrap gap-3">
           {(Array.isArray(interests) ? interests : []).map(tag => {
             const isSelected = selected.includes(tag.id);
             return (
@@ -145,33 +162,43 @@ export default function ChooseInterests() {
                 key={tag.id}
                 type="button"
                 onClick={() => handleSelect(tag.id)}
-                className={`flex flex-col items-start px-6 py-4 min-h-[64px] rounded-2xl font-semibold border-2 transition-[transform,box-shadow,background-color,border-color] duration-150 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 whitespace-normal
-                  ${isSelected
-                    ? 'bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 border-primary text-white scale-105 shadow-2xl'
-                    : 'bg-input-bg border-input-border text-foreground hover:bg-card hover:border-primary/60 hover:scale-105'}
-                `}
-                aria-pressed={isSelected}
                 disabled={!isSelected && selected.length >= 10}
+                aria-pressed={isSelected}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border font-medium text-sm transition-[transform,background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 border-transparent text-white shadow-md scale-[1.03]'
+                    : 'bg-card border-card-border text-foreground hover:border-primary/50 hover:scale-[1.03] disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100'
+                }`}
               >
-                <span className="text-lg font-semibold">{tag.name}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+                <span>{tag.name}</span>
               </button>
             );
           })}
         </div>
-        {error && (
-          <div className="w-full text-center text-red-600 font-semibold mt-2 animate-pulse">{error}</div>
-        )}
+      </div>
+
+      {/* Barra inferior fixa */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-card-border px-4 py-3">
+        {error && <p className="text-red-500 text-xs text-center mb-2">{error}</p>}
         <button
           onClick={handleSubmit}
-          disabled={selected.length < 3 || selected.length > 10 || loading}
-          className="mt-4 w-full py-3 rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white font-bold shadow-xl hover:scale-105 hover:shadow-2xl transition-all duration-200 ease-in-out tracking-wide text-lg border-none outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={selected.length < 3 || loading}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 text-white font-bold shadow-lg transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <span className="flex items-center justify-center gap-2">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="inline-block"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
-            Confirmar
-          </span>
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Salvando...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
+              Confirmar{selected.length >= 3 ? ` (${selected.length} interesses)` : ''}
+            </>
+          )}
         </button>
-      </main>
+      </div>
     </div>
   );
 }
