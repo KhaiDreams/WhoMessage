@@ -62,7 +62,11 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             { expiresIn: '7d' } // 7 dias
         );
 
-        res.status(201).json({ message: 'Usuário registrado com sucesso', user: newUser, token });
+        res.status(201).json({
+            message: 'Usuário registrado com sucesso',
+            user: { id: newUser.id, username: newUser.username, email: newUser.email, age: newUser.age },
+            token
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Erro ao registrar usuário.' });
@@ -83,8 +87,12 @@ export const loginUser = async (req: Request, res: Response) => {
             }
         });
 
-        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(404).json({ message: "Login incorreto!" });
+        // Proteção contra timing oracle: sempre executa bcrypt mesmo se o usuário não existir
+        const hashToCompare = user?.password_hash ?? '$2b$12$KIXeaGKFHLjNqHXR5YaGeh9v1pHi0gjBYmf1qXfmidMxkUaHF3q6';
+        const passwordValid = await bcrypt.compare(password, hashToCompare);
+
+        if (!user || !passwordValid) {
+            return res.status(401).json({ message: "Login incorreto!" });
         }
 
         if (user.ban) {
@@ -146,18 +154,15 @@ export const updateUser = async (req: Request, res: Response) => {
         if (String(userId) !== String(paramId)) {
             return res.status(403).json({ message: 'Você só pode atualizar o seu próprio perfil.' });
         }
-        const { username, email, age, pfp, bio, nicknames } = req.body; // Removed sensitive fields
-        
+        const { username, age, pfp, bio, nicknames } = req.body;
 
-        
         const user = await User.findByPk(userId);
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }
-        
+
         // Atualiza apenas os campos permitidos (não sensíveis)
         user.username = username ?? user.username;
-        user.email = email ?? user.email;
         user.age = age ?? user.age;
         user.pfp = pfp ?? user.pfp;
         user.bio = bio ?? user.bio;
@@ -172,9 +177,12 @@ export const updateUser = async (req: Request, res: Response) => {
         }
         
         await user.save();
-        res.json({ message: 'Perfil atualizado com sucesso.', user });
+        const userData = user.get({ plain: true }) as any;
+        delete userData.password_hash;
+        res.json({ message: 'Perfil atualizado com sucesso.', user: userData });
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao atualizar perfil.', error });
+        console.error('Update user error:', error);
+        res.status(500).json({ message: 'Erro ao atualizar perfil.' });
     }
 };
 
@@ -208,7 +216,7 @@ export const changePassword = async (req: Request, res: Response) => {
         res.json({ message: 'Senha alterada com sucesso.' });
     } catch (error) {
         console.error('Erro ao alterar senha:', error);
-        res.status(500).json({ message: 'Erro ao alterar senha.', error });
+        res.status(500).json({ message: 'Erro ao alterar senha.' });
     }
 };
 
@@ -241,8 +249,8 @@ export const addNicknames = async (req: Request, res: Response) => {
             nicknames: user.nicknames 
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erro ao adicionar nicknames.', error });
+        console.error('Add nicknames error:', error);
+        res.status(500).json({ message: 'Erro ao adicionar nicknames.' });
     }
 };
 
