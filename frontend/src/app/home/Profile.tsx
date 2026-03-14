@@ -205,7 +205,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
   };
 
   return (
-    <div className="h-full max-w-4xl mx-auto flex items-center justify-center p-4">
+      <div className="min-h-full max-w-4xl mx-auto flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8 border border-card-border">
         <div className="text-center">
           {/* Avatar */}

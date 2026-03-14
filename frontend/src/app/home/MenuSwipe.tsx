@@ -190,48 +190,76 @@ export default function MenuSwipe() {
     document.addEventListener('mouseup', onUp);
   };
 
-  // Touch events — direção travada no primeiro movimento significativo
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isAnimatingRef.current) return;
-    gestureRef.current = 'none';
-    const t = e.touches[0];
-    startPos.current = { x: t.clientX, y: t.clientY };
-    lastTouchYRef.current = t.clientY;
-  };
+  // handleSwipeRef — permite que o listener nativo (useEffect abaixo) sempre
+  // acesse a versão mais recente de handleSwipe sem fechar sobre estado stale.
+  const handleSwipeRef = useRef<(dir: 'left' | 'right') => void>(() => {});
+  handleSwipeRef.current = handleSwipe;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isAnimatingRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - startPos.current.x;
-    const dy = t.clientY - startPos.current.y;
-    const moveDY = lastTouchYRef.current - t.clientY;
-    lastTouchYRef.current = t.clientY;
+  // Touch events com listener NATIVO não-passivo — essencial para poder chamar
+  // e.preventDefault() e evitar concorrência com o scroll nativo do browser.
+  // onTouchMove do React é passivo por padrão e não pode bloquear o scroll.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
 
-    if (gestureRef.current === 'none') {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-        gestureRef.current = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
+    const onStart = (e: TouchEvent) => {
+      if (isAnimatingRef.current) return;
+      gestureRef.current = 'none';
+      const t = e.touches[0];
+      startPos.current = { x: t.clientX, y: t.clientY };
+      lastTouchYRef.current = t.clientY;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (isAnimatingRef.current) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startPos.current.x;
+      const dy = t.clientY - startPos.current.y;
+      const moveDY = lastTouchYRef.current - t.clientY;
+      lastTouchYRef.current = t.clientY;
+
+      if (gestureRef.current === 'none') {
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          gestureRef.current = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
+        }
+        // Bloqueia qualquer default durante a fase de detecção
+        e.preventDefault();
+        return;
       }
-      return;
-    }
 
-    if (gestureRef.current === 'horizontal') {
-      dragXRef.current = dx;
-      applyTransform(dx);
-    } else if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop += moveDY;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (gestureRef.current === 'horizontal') {
-      if (Math.abs(dragXRef.current) > 80) {
-        handleSwipe(dragXRef.current > 0 ? 'right' : 'left');
-      } else {
-        snapBack();
+      if (gestureRef.current === 'horizontal') {
+        // Impede scroll nativo ao arrastar horizontalmente
+        e.preventDefault();
+        dragXRef.current = dx;
+        applyTransform(dx);
+      } else if (scrollContainerRef.current) {
+        // Scroll vertical manual — preventDefault evita conflito com scroll nativo
+        e.preventDefault();
+        scrollContainerRef.current.scrollTop += moveDY;
       }
-    }
-    gestureRef.current = 'none';
-  };
+    };
+
+    const onEnd = () => {
+      if (gestureRef.current === 'horizontal') {
+        if (Math.abs(dragXRef.current) > 80) {
+          handleSwipeRef.current(dragXRef.current > 0 ? 'right' : 'left');
+        } else {
+          snapBack();
+        }
+      }
+      gestureRef.current = 'none';
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: false });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
+  }, []); // todos os valores usados são refs — sem risco de stale closure
 
   // Função para abrir modal de report
   const handleReportClick = () => {
@@ -311,9 +339,6 @@ export default function MenuSwipe() {
           className="relative bg-card rounded-2xl shadow-2xl border border-card-border flex flex-col flex-1 min-h-0 cursor-grab active:cursor-grabbing"
           style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none', willChange: 'transform' } as React.CSSProperties}
           onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           onDragStart={(e) => e.preventDefault()}
         >
           {/* Foto — fixo no topo */}

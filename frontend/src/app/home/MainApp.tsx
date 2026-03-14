@@ -5,7 +5,6 @@ import Messages from "./Messages";
 import Profile from "./Profile";
 import Header from "./Header";
 import Welcome from "./Welcome";
-import FeedbackButton from "./FeedbackButton";
 import useProfile from "@/hooks/useProfile";
 import { Home, MessageCircle, User } from 'lucide-react';
 
@@ -57,13 +56,13 @@ export default function MainApp() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-primary/10 to-secondary/10 overflow-x-hidden">
+    <div className="h-dvh w-full bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden">
       <Header onLogoClick={() => setTab("menu")} onNavigateToMessages={() => setTab("messages")} />
-      <div className="pt-16 pb-16 min-h-screen overflow-x-hidden">
-        <div className="max-w-7xl mx-auto px-4 h-full">
-          <div className={tab !== "menu" ? "hidden" : ""}><MenuSwipe /></div>
-          <div className={tab !== "messages" ? "hidden" : ""}><Messages /></div>
-          {tab === "profile" && <Profile />}
+      <div className="pt-16 pb-16 h-full overflow-hidden">
+        <div className="h-full">
+          <div className={tab !== "menu" ? "hidden" : "h-full"}><MenuSwipe /></div>
+          <div className={tab !== "messages" ? "hidden" : "h-full"}><Messages /></div>
+          {tab === "profile" && <div className="h-full overflow-y-auto"><Profile /></div>}
         </div>
       </div>
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-t border-card-border shadow-xl">
@@ -84,7 +83,6 @@ export default function MainApp() {
           ))}
         </div>
       </nav>
-      <FeedbackButton isVisible={tab !== "messages"} />
     </div>
   );
 }

@@ -417,7 +417,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-full max-w-6xl mx-auto p-2 md:p-0">
+    <div className="h-full">
       {/* Profile Modal */}
       {profileUserId && (
         <UserProfile 
@@ -428,10 +428,10 @@ export default function Messages() {
         />
       )}
       
-      <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] bg-card/80 backdrop-blur-sm rounded-lg shadow-xl overflow-hidden border border-card-border">
+      <div className="flex h-full bg-card overflow-hidden md:rounded-lg md:shadow-xl md:border md:border-card-border">
         {/* Lista de conversas */}
         <div className={`w-full md:w-1/3 border-r border-card-border overflow-y-auto ${selected ? 'hidden md:block' : 'block'}`}>
-          <div className="p-3 md:p-4 border-b border-card-border bg-card/90 flex items-center justify-between">
+          <div className="p-3 border-b border-card-border bg-card flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-bold text-foreground">Conversas ({conversationsWithMatches.length})</h2>
             {totalUnreadMessages > 0 && (
               <div className="bg-primary text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] flex items-center justify-center">
@@ -597,10 +597,10 @@ export default function Messages() {
         </div>
         
         {/* Chat - Responsivo para mobile */}
-        <div className={`flex-1 flex-col justify-between bg-card/60 ${selected ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex-1 flex-col justify-between bg-card ${selected ? 'flex' : 'hidden md:flex'}`}>
           {selected && selectedConversation ? (
             <>
-              <div className="p-3 md:p-4 border-b border-card-border bg-card/90 flex items-center gap-3">
+              <div className="p-3 border-b border-card-border bg-card flex items-center gap-3">
                 <button 
                   onClick={() => setSelected(null)}
                   className="md:hidden text-primary hover:bg-primary/10 p-2 rounded-full transition-colors flex-shrink-0"
@@ -744,7 +744,7 @@ export default function Messages() {
                     </div>
 
                     {/* Área de input */}
-                    <div className="p-4 bg-card/90 border-t border-card-border">
+                    <div className="p-4 bg-card border-t border-card-border">
                       <form 
                         onSubmit={(e) => {
                           e.preventDefault();
