@@ -21,10 +21,8 @@ export const createFeedback = async (req: Request, res: Response) => {
 
 export const listFeedbacks = async (req: Request, res: Response) => {
   try {
-    // Permitir apenas admin
-    const userId = req.userId;
-    const user = await User.findByPk(userId);
-    if (!user || !user.is_admin) {
+    // req.currentUser is set by AuthMiddleware — no extra DB query needed
+    if (!req.currentUser?.is_admin) {
       return res.status(403).json({ message: 'Acesso restrito a administradores.' });
     }
     const page = parseInt(req.query.page as string) || 1;
