@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { Conversation } from '../../models/Chat/Conversation';
 import { Message } from '../../models/Chat/Message';
 import { User } from '../../models/Users/User';
+import sequelize from '../../database/db';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -134,41 +135,38 @@ export class ChatController {
 
       // Se não existir, criar nova conversa
       if (!conversation) {
-        conversation = await Conversation.create({
+        const newConv = await Conversation.create({
           user1Id: Math.min(userId, parseInt(targetUserId)),
           user2Id: Math.max(userId, parseInt(targetUserId))
         });
 
-        // Buscar novamente com includes
-        conversation = await Conversation.findByPk(conversation.id, {
-          include: [
-            {
-              model: User,
-              as: 'user1',
-              attributes: ['id', 'username', 'pfp']
+        // Constrói a resposta com dados já em memória — sem re-fetch
+        return res.json({
+          conversation: {
+            id: newConv.id,
+            chatPartner: {
+              id: targetUser.id,
+              username: targetUser.username,
+              pfp: targetUser.pfp
             },
-            {
-              model: User,
-              as: 'user2',
-              attributes: ['id', 'username', 'pfp']
-            }
-          ]
+            createdAt: newConv.createdAt
+          }
         });
       }
 
-      // Formatar resposta
-      const isUser1 = conversation!.user1Id === userId;
-      const chatPartner = isUser1 ? conversation!.user2 : conversation!.user1;
+      // Formatar resposta (conversa existente)
+      const isUser1 = conversation.user1Id === userId;
+      const chatPartner = isUser1 ? conversation.user2 : conversation.user1;
 
       return res.json({
         conversation: {
-          id: conversation!.id,
+          id: conversation.id,
           chatPartner: {
             id: chatPartner?.id,
             username: chatPartner?.username,
             pfp: chatPartner?.pfp
           },
-          createdAt: conversation!.createdAt
+          createdAt: conversation.createdAt
         }
       });
 
@@ -309,28 +307,20 @@ export class ChatController {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      // Buscar conversas do usuário
-      const conversations = await Conversation.findAll({
-        where: {
-          [Op.or]: [
-            { user1Id: userId },
-            { user2Id: userId }
-          ]
-        }
-      });
+      // Uma única query com subquery — elimina a busca intermediária de IDs de conversa
+      const [{ count }] = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int AS count
+         FROM messages
+         WHERE is_read = false
+           AND sender_id != :userId
+           AND conversation_id IN (
+             SELECT id FROM conversations
+             WHERE user1_id = :userId OR user2_id = :userId
+           )`,
+        { replacements: { userId }, type: QueryTypes.SELECT }
+      );
 
-      const conversationIds = conversations.map(conv => conv.id);
-
-      // Contar mensagens não lidas
-      const unreadCount = await Message.count({
-        where: {
-          conversationId: { [Op.in]: conversationIds },
-          senderId: { [Op.ne]: userId },
-          isRead: false
-        }
-      });
-
-      return res.json({ unreadCount });
+      return res.json({ unreadCount: count ?? 0 });
 
     } catch (error) {
       console.error('Error getting unread count:', error);
