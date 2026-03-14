@@ -87,6 +87,19 @@ export const interactionSchema = Joi.object({
 });
 
 // Validação para notificações
+export const matchIdSchema = Joi.object({
+  matchId: Joi.number()
+    .integer()
+    .positive()
+    .required()
+    .messages({
+      'number.base': 'ID do match deve ser um número',
+      'number.integer': 'ID do match deve ser um número inteiro',
+      'number.positive': 'ID do match deve ser positivo',
+      'any.required': 'ID do match é obrigatório'
+    })
+});
+
 export const notificationIdSchema = Joi.object({
   notificationId: Joi.number()
     .integer()
