@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
+import sequelize from '../../database/db';
 
 interface UserRequestBody {
     username: string;
@@ -21,9 +22,11 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
     try {
         const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
 
-        // Verificar se usuário já existe
-        const userExists = await User.findOne({ where: { email } });
-        const usernameExists = await User.findOne({ where: { username } });
+        // Verificar se usuário já existe (queries em paralelo)
+        const [userExists, usernameExists] = await Promise.all([
+            User.findOne({ where: { email } }),
+            User.findOne({ where: { username } })
+        ]);
 
         if (userExists) {
             return res.status(422).json({ message: "Já existe um usuário com esse email!" });
@@ -246,14 +249,6 @@ export const addNicknames = async (req: Request, res: Response) => {
 // Listar todos os usuários para admin (com filtros)
 export const listUsersForAdmin = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
-        
-        // Verificar se é admin
-        const user = await User.findByPk(userId);
-        if (!user?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
-
         const { status, search, page = 1, limit = 20 } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
 
@@ -279,22 +274,26 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
             ];
         }
 
-        const users = await User.findAndCountAll({
-            where: whereClause,
-            attributes: { exclude: ['password_hash'] },
-            order: [['createdAt', 'DESC']],
-            limit: Number(limit),
-            offset
-        });
-
-        // Estatísticas gerais
-        const stats = {
-            total: await User.count(),
-            banned: await User.count({ where: { ban: true } }),
-            active: await User.count({ where: { ban: false, active: true } }),
-            inactive: await User.count({ where: { active: false } }),
-            admins: await User.count({ where: { is_admin: true } })
-        };
+        // findAndCountAll e aggregate de stats em paralelo (6 queries → 2 em paralelo)
+        const [users, [statsRow]] = await Promise.all([
+            User.findAndCountAll({
+                where: whereClause,
+                attributes: { exclude: ['password_hash'] },
+                order: [['createdAt', 'DESC']],
+                limit: Number(limit),
+                offset
+            }),
+            sequelize.query<{ total: number; banned: number; active: number; inactive: number; admins: number }>(
+                `SELECT
+                    COUNT(*)::int                                         AS total,
+                    COUNT(*) FILTER (WHERE ban = true)::int               AS banned,
+                    COUNT(*) FILTER (WHERE ban = false AND active = true)::int AS active,
+                    COUNT(*) FILTER (WHERE active = false)::int           AS inactive,
+                    COUNT(*) FILTER (WHERE is_admin = true)::int          AS admins
+                 FROM users`,
+                { type: QueryTypes.SELECT }
+            )
+        ]);
 
         res.json({
             users: users.rows,
@@ -304,7 +303,7 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
                 total_users: users.count,
                 per_page: Number(limit)
             },
-            stats
+            stats: statsRow
         });
     } catch (error) {
         console.error('Erro ao listar usuários para admin:', error);
@@ -315,15 +314,8 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
 // Banir/desbanir usuário diretamente (para admin)
 export const toggleUserBan = async (req: Request<{ id: string }, {}, { ban: boolean; admin_notes?: string }>, res: Response) => {
     try {
-        const adminId = req.userId;
         const targetUserId = req.params.id;
         const { ban, admin_notes } = req.body;
-
-        // Verificar se é admin
-        const admin = await User.findByPk(adminId);
-        if (!admin?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
 
         const targetUser = await User.findByPk(targetUserId);
         if (!targetUser) {
