@@ -292,7 +292,18 @@ export const userAPI = {
   
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/users/change-password', { currentPassword, newPassword }),
-  
+
+  uploadAvatar: (file: File): Promise<{ url: string }> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return apiFetch(withApiUrl('/users/upload-avatar'), {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData
+    });
+  },
+
   getRecommendations: (limit = 10): Promise<RecommendationsResponse> => 
     api.get(`/api/tags/recommendations?limit=${limit}`)
 };
