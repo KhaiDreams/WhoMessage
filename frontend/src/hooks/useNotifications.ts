@@ -72,15 +72,50 @@ export const useNotifications = () => {
     }
   }, []);
 
-  // Polling para buscar novas notificações
+  // Limpar todas as notificações (apaga do banco)
+  const clearAll = useCallback(async () => {
+    try {
+      await notificationsAPI.clearAll();
+      setNotifications([]);
+      setUnreadCount(0);
+      return true;
+    } catch (err: any) {
+      console.error('Erro ao limpar notificações:', err);
+      return false;
+    }
+  }, []);
+
+  // Polling — pausa quando aba está oculta, retoma no foco
   useEffect(() => {
     fetchNotifications();
-    
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 30000); // A cada 30 segundos
 
-    return () => clearInterval(interval);
+    const INTERVAL_MS = 60_000; // 60s — notificações não são ultra-urgentes
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (timer) return;
+      timer = setInterval(() => fetchNotifications(), INTERVAL_MS);
+    };
+    const stop = () => {
+      if (timer) { clearInterval(timer); timer = null; }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        fetchNotifications(); // busca imediata ao retornar
+        start();
+      }
+    };
+
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [fetchNotifications]);
 
   return {
@@ -91,6 +126,7 @@ export const useNotifications = () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    clearAll,
     refresh: fetchNotifications,
   };
 };

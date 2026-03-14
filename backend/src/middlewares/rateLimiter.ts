@@ -20,9 +20,9 @@ export const passwordChangeLimiter = rateLimit({
 
 // Rate limiting geral para APIs
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requisições por IP
-  message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 500, // máximo 500 requisições por IP
+  message: { error: 'Muitas requisições. Tente novamente em 5 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
 });

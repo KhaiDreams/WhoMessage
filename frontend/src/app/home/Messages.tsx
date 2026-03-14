@@ -4,6 +4,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useChat } from "@/hooks/useChat";
 import { useSocket } from "@/hooks/useSocket";
 import UserProfile from "@/components/UserProfile";
+import { AlertTriangle, Gamepad2, MessageCircle, Check, CheckCheck, Image, Paperclip, Send, ChevronRight, ChevronLeft, Lightbulb, Heart } from 'lucide-react';
 
 interface ConversationWithMatch {
   id: number;
@@ -36,28 +37,6 @@ export default function Messages() {
     return () => window.removeEventListener('error', handleError);
   }, []);
 
-  // Se houver erro, mostrar tela simples
-  if (hasError) {
-    return (
-      <div className="h-full flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold mb-4">Oops! Algo deu errado</h2>
-          <p className="text-gray-600 mb-4">
-            Tente recarregar a página ou volte mais tarde.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
-          >
-            Recarregar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  try {
   const { matches, loading, error, fetchMatches } = useMatches();
   const [selected, setSelected] = useState<number | null>(null);
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
@@ -347,7 +326,7 @@ export default function Messages() {
       });
       
     } catch (err) {
-      console.error('💥 Erro ao abrir conversa:', err);
+      console.error('[Erro ao abrir conversa]:', err);
     }
   };
 
@@ -372,6 +351,26 @@ export default function Messages() {
 
   // Calculate total unread messages
   const totalUnreadMessages = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+
+  if (hasError) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="mb-4 flex justify-center"><AlertTriangle className="w-10 h-10 text-yellow-500" /></div>
+          <h2 className="text-xl font-bold mb-4">Oops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-4">
+            Tente recarregar a página ou volte mais tarde.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
+          >
+            Recarregar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -404,12 +403,12 @@ export default function Messages() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">�</div>
+          <div className="mb-4 flex justify-center"><Heart className="w-16 h-16 text-primary/40" /></div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Nenhum match ainda</h2>
           <p className="text-foreground/60 mb-4">Continue usando o swipe para encontrar alguém especial!</p>
           <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 max-w-md mx-auto">
             <p className="text-sm text-foreground/80">
-              💡 <strong>Dica:</strong> Quando vocês se curtirem mutuamente, aparecerá um match aqui e poderão conversar!
+              <Lightbulb className="w-4 h-4 inline mr-1 text-yellow-500" /> <strong>Dica:</strong> Quando vocês se curtirem mutuamente, aparecerá um match aqui e poderão conversar!
             </p>
           </div>
         </div>
@@ -442,7 +441,7 @@ export default function Messages() {
           </div>
           {conversationsWithMatches.length === 0 ? (
             <div className="p-4 text-center">
-              <div className="text-4xl mb-2">💬</div>
+              <div className="text-4xl mb-2 flex justify-center"><MessageCircle className="w-10 h-10 text-foreground/40" /></div>
               <p className="text-foreground/60 text-sm">Nenhuma conversa ainda</p>
             </div>
           ) : (
@@ -468,9 +467,10 @@ export default function Messages() {
                         src={conv.otherUser.pfp} 
                         alt={conv.otherUser.username}
                         className="w-full h-full rounded-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
-                      '🎮'
+                      <Gamepad2 className="w-6 h-6 text-primary/60" />
                     )}
                   </div>
                   
@@ -530,7 +530,7 @@ export default function Messages() {
                           {conv.lastMessage.isFromMe && (
                             <div className="flex-shrink-0">
                               {/* Placeholder for read status - will be enhanced later */}
-                              <div className="text-blue-500" title="Enviada">✓</div>
+                              <div className="text-blue-500" title="Enviada"><Check className="w-3 h-3" /></div>
                             </div>
                           )}
                           <p className={`text-xs truncate ${
@@ -540,9 +540,9 @@ export default function Messages() {
                           }`}>
                             {conv.lastMessage.isFromMe ? 'Você: ' : ''}
                             {conv.lastMessage.messageType === 'image' 
-                              ? '📷 Imagem' 
+                              ? <div className="flex items-center gap-1 text-xs"><Image className="w-3 h-3" /> Imagem</div>
                               : conv.lastMessage.messageType === 'file'
-                              ? '📎 Arquivo'
+                              ? <div className="flex items-center gap-1 text-xs"><Paperclip className="w-3 h-3" /> Arquivo</div>
                               : conv.lastMessage.content}
                           </p>
                         </div>
@@ -589,7 +589,7 @@ export default function Messages() {
                 
                 {/* Mobile arrow indicator */}
                 <div className="md:hidden text-foreground/40 flex-shrink-0">
-                  →
+                  <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             ))
@@ -606,7 +606,7 @@ export default function Messages() {
                   className="md:hidden text-primary hover:bg-primary/10 p-2 rounded-full transition-colors flex-shrink-0"
                   title="Voltar para lista"
                 >
-                  ←
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="relative flex-shrink-0">
                   <div 
@@ -619,9 +619,10 @@ export default function Messages() {
                         src={selectedConversation.otherUser.pfp} 
                         alt={selectedConversation.otherUser.username}
                         className="w-full h-full rounded-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
-                      '🎮'
+                      <Gamepad2 className="w-5 h-5 text-primary/60" />
                     )}
                   </div>
                   
@@ -664,7 +665,7 @@ export default function Messages() {
                       {messages.length === 0 ? (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
-                            <div className="text-4xl mb-3">💬</div>
+                            <div className="text-4xl mb-3 flex justify-center"><MessageCircle className="w-10 h-10 text-foreground/40" /></div>
                             <p className="text-foreground/60">Início da conversa</p>
                             <p className="text-sm text-foreground/40 mt-1">Envie a primeira mensagem!</p>
                           </div>
@@ -684,9 +685,9 @@ export default function Messages() {
                                 {/* Message content */}
                                 <div className="space-y-1">
                                   {message.messageType === 'image' ? (
-                                    <div className="text-sm">📷 Imagem</div>
+                                    <div className="text-sm flex items-center gap-1"><Image className="w-3 h-3" /> Imagem</div>
                                   ) : message.messageType === 'file' ? (
-                                    <div className="text-sm">📎 Arquivo</div>
+                                    <div className="text-sm flex items-center gap-1"><Paperclip className="w-3 h-3" /> Arquivo</div>
                                   ) : (
                                     <p className="text-sm leading-relaxed break-words">{message.content}</p>
                                   )}
@@ -706,9 +707,9 @@ export default function Messages() {
                                     {message.isFromMe && (
                                       <div className="ml-2 flex-shrink-0">
                                         {message.isRead ? (
-                                          <div className="text-blue-300" title="Lida">✓✓</div>
+                                          <div className="text-blue-300" title="Lida"><CheckCheck className="w-3 h-3" /></div>
                                         ) : (
-                                          <div className="text-white/50" title="Enviada">✓</div>
+                                          <div className="text-white/50" title="Enviada"><Check className="w-3 h-3" /></div>
                                         )}
                                       </div>
                                     )}
@@ -780,7 +781,7 @@ export default function Messages() {
                           className="px-6 py-3 bg-gradient-to-r from-primary to-primary/90 text-white rounded-lg hover:from-primary/90 hover:to-primary/80 transition-all font-medium shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98]"
                         >
                           <span className="hidden sm:inline">Enviar</span>
-                          <span className="sm:hidden">📤</span>
+                          <span className="sm:hidden"><Send className="w-4 h-4" /></span>
                         </button>
                       </form>
                     </div>
@@ -798,7 +799,7 @@ export default function Messages() {
           ) : (
             <div className="flex-1 flex items-center justify-center p-4 md:p-8">
               <div className="text-center">
-                <div className="text-4xl md:text-6xl mb-2 md:mb-4">💬</div>
+                  <div className="mb-2 md:mb-4 flex justify-center"><MessageCircle className="w-12 h-12 md:w-16 md:h-16 text-foreground/40" /></div>
                 <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">Selecione uma conversa</h3>
                 <p className="text-sm md:text-base text-foreground/60">Escolha um match para começar a conversar</p>
               </div>
@@ -808,24 +809,4 @@ export default function Messages() {
       </div>
     </div>
   );
-  } catch (error) {
-    console.error('Render error:', error);
-    return (
-      <div className="h-full flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-4xl mb-4">📱</div>
-          <h2 className="text-xl font-bold mb-4">Problemas de compatibilidade</h2>
-          <p className="text-gray-600 mb-4">
-            Seu dispositivo pode ter limitações. Tente usar um navegador mais recente.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-white rounded-lg"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
 }

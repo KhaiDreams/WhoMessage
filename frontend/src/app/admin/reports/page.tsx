@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import useAuth from "../../../hooks/useAuth";
 import { reportsAPI, type Report, type ReportsResponse, type ReportsStatsResponse } from "../../../lib/api";
 import { toast } from "react-toastify";
+import { Ban, BarChart2, User, Target, ClipboardList, FileText, UserCheck, Eye, Hammer, X, CheckCircle, RefreshCw } from 'lucide-react';
 
 interface FilterOptions {
   status: string;
@@ -33,7 +34,7 @@ export default function AdminReportsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
+          <div className="mb-4 flex justify-center"><Ban className="w-16 h-16 text-red-500" /></div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
           <p className="text-foreground/60">Apenas administradores podem acessar esta página.</p>
         </div>
@@ -180,8 +181,8 @@ export default function AdminReportsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            📊 Painel de Reports
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <BarChart2 className="w-8 h-8" /> Painel de Reports
           </h1>
           <p className="text-foreground/70">
             Gerencie reports de usuários e moderação da plataforma
@@ -266,7 +267,7 @@ export default function AdminReportsPage() {
                 onClick={() => { fetchReports(true); fetchStats(); }}
                 className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors w-full"
               >
-                🔄 Atualizar
+                <RefreshCw className="w-4 h-4 inline mr-1" /> Atualizar
               </button>
             </div>
           </div>
@@ -276,7 +277,7 @@ export default function AdminReportsPage() {
         <div className="space-y-4">
           {reports.length === 0 ? (
             <div className="bg-card rounded-lg p-8 border border-card-border text-center">
-              <div className="text-4xl mb-4">📝</div>
+              <div className="mb-4 flex justify-center"><FileText className="w-10 h-10 text-foreground/40" /></div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum report encontrado</h3>
               <p className="text-foreground/60">
                 {filters.status ? 'Não há reports com este status.' : 'Ainda não há reports na plataforma.'}
@@ -309,13 +310,13 @@ export default function AdminReportsPage() {
                   {/* Detalhes do report */}
                   <div className="grid md:grid-cols-2 gap-6 mb-4">
                     <div>
-                      <h4 className="font-medium text-foreground mb-2">👤 Reportado por:</h4>
+                      <h4 className="font-medium text-foreground mb-2 flex items-center gap-1"><User className="w-4 h-4" /> Reportado por:</h4>
                       <p className="text-foreground/70">
                         {report.reporter?.username || 'Usuário desconhecido'} ({report.reporter?.email})
                       </p>
                     </div>
                     <div>
-                      <h4 className="font-medium text-foreground mb-2">🎯 Usuário reportado:</h4>
+                      <h4 className="font-medium text-foreground mb-2 flex items-center gap-1"><Target className="w-4 h-4" /> Usuário reportado:</h4>
                       <p className="text-foreground/70">
                         {report.reportedUser?.username || 'Usuário desconhecido'} ({report.reportedUser?.email})
                       </p>
@@ -323,7 +324,7 @@ export default function AdminReportsPage() {
                   </div>
 
                   <div className="mb-4">
-                    <h4 className="font-medium text-foreground mb-2">📋 Motivo:</h4>
+                    <h4 className="font-medium text-foreground mb-2 flex items-center gap-1"><ClipboardList className="w-4 h-4" /> Motivo:</h4>
                     <p className="text-foreground/80 bg-background rounded-lg p-3 border border-card-border">
                       {report.reason}
                     </p>
@@ -331,7 +332,7 @@ export default function AdminReportsPage() {
 
                   {report.description && (
                     <div className="mb-4">
-                      <h4 className="font-medium text-foreground mb-2">📝 Descrição:</h4>
+                      <h4 className="font-medium text-foreground mb-2 flex items-center gap-1"><FileText className="w-4 h-4" /> Descrição:</h4>
                       <p className="text-foreground/80 bg-background rounded-lg p-3 border border-card-border">
                         {report.description}
                       </p>
@@ -340,7 +341,7 @@ export default function AdminReportsPage() {
 
                   {report.admin_notes && (
                     <div className="mb-4">
-                      <h4 className="font-medium text-foreground mb-2">👨‍💼 Notas do Admin:</h4>
+                      <h4 className="font-medium text-foreground mb-2 flex items-center gap-1"><UserCheck className="w-4 h-4" /> Notas do Admin:</h4>
                       <p className="text-foreground bg-card rounded-lg p-3 border border-card-border">
                         {report.admin_notes}
                       </p>
@@ -355,7 +356,7 @@ export default function AdminReportsPage() {
                         disabled={actionLoading[`status-${report.id}`]}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {actionLoading[`status-${report.id}`] ? '...' : '👁️ Marcar como Analisado'}
+                        {actionLoading[`status-${report.id}`] ? '...' : <><Eye className="w-4 h-4 inline mr-1" /> Marcar como Analisado</>}
                       </button>
                       
                       <button 
@@ -363,7 +364,7 @@ export default function AdminReportsPage() {
                         disabled={actionLoading[`ban-${report.id}`] || report.reportedUser?.ban}
                         className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {actionLoading[`ban-${report.id}`] ? '...' : '🔨 Banir Usuário'}
+                        {actionLoading[`ban-${report.id}`] ? '...' : <><Hammer className="w-4 h-4 inline mr-1" /> Banir Usuário</>}
                       </button>
                       
                       <button 
@@ -371,7 +372,7 @@ export default function AdminReportsPage() {
                         disabled={actionLoading[`status-${report.id}`]}
                         className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {actionLoading[`status-${report.id}`] ? '...' : '❌ Descartar'}
+                        {actionLoading[`status-${report.id}`] ? '...' : <><X className="w-4 h-4 inline mr-1" /> Descartar</>}
                       </button>
                     </div>
                   )}
@@ -384,7 +385,7 @@ export default function AdminReportsPage() {
                         disabled={actionLoading[`unban-${report.reported_user_id}`]}
                         className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {actionLoading[`unban-${report.reported_user_id}`] ? '...' : '✅ Desbanir Usuário'}
+                        {actionLoading[`unban-${report.reported_user_id}`] ? '...' : <><CheckCircle className="w-4 h-4 inline mr-1" /> Desbanir Usuário</>}
                       </button>
                     </div>
                   )}

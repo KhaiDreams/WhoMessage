@@ -52,6 +52,7 @@ export async function chatAuthMiddleware(
             email: user.email,
             username: user.username
         };
+        req.currentUser = user;
         
         return next();
     } catch (error) {

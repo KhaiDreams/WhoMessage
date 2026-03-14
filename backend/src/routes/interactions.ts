@@ -3,7 +3,8 @@ import {
     likeUser, 
     getNotifications, 
     markNotificationAsRead, 
-    markAllNotificationsAsRead, 
+    markAllNotificationsAsRead,
+    clearNotifications,
     getMatches, 
     getPendingLikes,
     unmatch
@@ -26,6 +27,9 @@ router.put('/notifications/:notificationId/read', auth, validateParams(notificat
 
 // Marcar todas as notificações como lidas
 router.put('/notifications/mark-all-read', auth, markAllNotificationsAsRead);
+
+// Limpar (apagar) todas as notificações
+router.delete('/notifications', auth, clearNotifications);
 
 // Buscar matches do usuário
 router.get('/matches', auth, getMatches);

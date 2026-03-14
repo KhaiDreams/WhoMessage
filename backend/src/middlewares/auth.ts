@@ -48,6 +48,7 @@ export async function AuthMiddleware(
         }
 
         req.userId = id;
+        req.currentUser = user;
         return next();
     } catch (error) {
         return res.status(401).json({ message: "Token inválido" });

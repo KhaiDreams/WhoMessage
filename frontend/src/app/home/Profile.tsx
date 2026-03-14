@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { userAPI, tagsAPI } from '../../lib/api';
 import { User, Tag } from '../../lib/api';
 import { toast } from 'react-toastify';
+import { Gamepad2, Camera, Check, Heart, Cake, Sparkles, Pencil, Lock, LogOut, Save, X, AtSign } from 'lucide-react';
 
 interface ProfileProps {
   user: User;
@@ -209,7 +210,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
         <div className="text-center">
           {/* Avatar */}
           <div className="relative mb-6 inline-block">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-6xl md:text-8xl border-4 border-primary/20 shadow-xl">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl">
               {formData.pfp ? (
                 <img 
                   src={formData.pfp} 
@@ -217,12 +218,12 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
-                '🎮'
+                <Gamepad2 className="w-16 h-16 md:w-20 md:h-20 text-primary/60" />
               )}
             </div>
             {edit && (
               <label className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 cursor-pointer hover:bg-primary-dark transition-colors shadow-lg">
-                📷
+                <Camera className="w-4 h-4" />
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </label>
             )}
@@ -296,20 +297,20 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    🎮 <span>Meus Jogos</span>
+                    <Gamepad2 className="w-5 h-5" /> <span>Meus Jogos</span>
                   </h3>
                   <span className={`text-sm px-3 py-1 rounded-full ${
                     selectedGames.length >= 3 
                       ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                       : 'bg-red-500/20 text-red-400 border border-red-500/30'
                   }`}>
-                    {selectedGames.length}/20 {selectedGames.length >= 3 ? '✓' : `(min. 3)`}
+                    {selectedGames.length}/20 {selectedGames.length >= 3 ? <Check className="w-3 h-3 inline" /> : `(min. 3)`}
                   </span>
                 </div>
                 <div className="relative">
                   <input
                     className="w-full px-4 py-3 pl-10 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500"
-                    placeholder="🔍 Buscar jogos..."
+                    placeholder="Buscar jogos..."
                     value={gameSearch}
                     onChange={(e) => setGameSearch(e.target.value)}
                   />
@@ -327,7 +328,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-white font-medium">{game.name}</span>
-                        {selectedGames.includes(game.id) && <span className="text-primary text-xl">✓</span>}
+                        {selectedGames.includes(game.id) && <Check className="w-4 h-4 text-primary" />}
                       </div>
                     </div>
                   ))}
@@ -338,20 +339,20 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    💝 <span>Meus Interesses</span>
+                    <Heart className="w-5 h-5" /> <span>Meus Interesses</span>
                   </h3>
                   <span className={`text-sm px-3 py-1 rounded-full ${
                     selectedInterests.length >= 3 
                       ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                       : 'bg-red-500/20 text-red-400 border border-red-500/30'
                   }`}>
-                    {selectedInterests.length}/10 {selectedInterests.length >= 3 ? '✓' : `(min. 3)`}
+                    {selectedInterests.length}/10 {selectedInterests.length >= 3 ? <Check className="w-3 h-3 inline" /> : `(min. 3)`}
                   </span>
                 </div>
                 <div className="relative">
                   <input
                     className="w-full px-4 py-3 pl-10 rounded-lg bg-slate-900/90 border border-slate-600/50 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-white placeholder-slate-400 transition-all hover:border-slate-500"
-                    placeholder="🔍 Buscar interesses..."
+                    placeholder="Buscar interesses..."
                     value={interestSearch}
                     onChange={(e) => setInterestSearch(e.target.value)}
                   />
@@ -369,7 +370,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-white font-medium">{interest.name}</span>
-                        {selectedInterests.includes(interest.id) && <span className="text-accent text-xl">✓</span>}
+                        {selectedInterests.includes(interest.id) && <Check className="w-4 h-4 text-accent" />}
                       </div>
                     </div>
                   ))}
@@ -389,14 +390,14 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                       Salvando...
                     </div>
                   ) : (
-                    '💾 Salvar Alterações'
+                    <span className="flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Salvar Alterações</span>
                   )}
                 </button>
                 <button 
                   onClick={() => setEdit(false)}
-                  className="px-6 py-3 rounded-lg border border-slate-600/50 text-foreground hover:bg-slate-700/50 transition-all duration-200 font-semibold"
+                  className="px-6 py-3 rounded-lg border border-slate-600/50 text-foreground hover:bg-slate-700/50 transition-all duration-200 font-semibold flex items-center gap-2"
                 >
-                  ✕ Cancelar
+                  <X className="w-4 h-4" /> Cancelar
                 </button>
               </div>
             </div>
@@ -415,7 +416,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                   </p>
                 )}
                 <div className="inline-flex items-center gap-2 bg-background/30 rounded-full px-4 py-2 border border-card-border/50">
-                  <span className="text-foreground/60">🎂</span>
+                  <Cake className="w-4 h-4 text-foreground/60" />
                   <span className="text-foreground font-medium">{formData.age} anos</span>
                 </div>
               </div>
@@ -423,7 +424,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               {formData.bio && (
                 <div className="text-left">
                   <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                    ✨ <span>Sobre mim</span>
+                    <Sparkles className="w-5 h-5" /> <span>Sobre mim</span>
                   </h3>
                   <p className="text-foreground/80 leading-relaxed bg-background/30 p-4 rounded-lg border border-card-border/50 italic">
                     "{formData.bio}"
@@ -432,8 +433,8 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               )}
               
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center">
-                  🎮 Jogos Favoritos
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Gamepad2 className="w-5 h-5" /> Jogos Favoritos
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {userGames.length > 0 ? (
@@ -452,8 +453,8 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               </div>
 
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center">
-                  💝 Interesses
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Heart className="w-5 h-5" /> Interesses
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {userInterests.length > 0 ? (
@@ -472,8 +473,8 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               </div>
               
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center">
-                  🎮 Nicknames
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <AtSign className="w-5 h-5" /> Nicknames
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {user.nicknames && user.nicknames.length > 0 ? (
@@ -494,15 +495,15 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
               <div className="space-y-3 pt-4">
                 <button 
                   onClick={() => setEdit(true)}
-                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg"
+                  className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
                 >
-                  ✏️ Editar perfil
+                  <Pencil className="w-4 h-4" /> Editar perfil
                 </button>
                 <button 
                   onClick={() => setShowPasswordChange(true)}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-semibold shadow-lg flex items-center justify-center gap-2"
                 >
-                  🔒 Alterar senha
+                  <Lock className="w-4 h-4" /> Alterar senha
                 </button>
                 <button 
                   onClick={() => {
@@ -510,9 +511,9 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                     localStorage.removeItem('whomessage_tutorial_completed');
                     window.location.href = '/login';
                   }}
-                  className="w-full bg-red-500/90 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors shadow-lg backdrop-blur-sm"
+                  className="w-full bg-red-500/90 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors shadow-lg backdrop-blur-sm flex items-center justify-center gap-2"
                 >
-                  🚪 Sair
+                  <LogOut className="w-4 h-4" /> Sair
                 </button>
               </div>
             </div>
@@ -525,7 +526,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-card/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 w-full max-w-md border border-card-border">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-foreground mb-2">🔒 Alterar Senha</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2"><Lock className="w-5 h-5" /> Alterar Senha</h3>
               <p className="text-foreground/60 text-sm">Digite sua senha atual e a nova senha</p>
             </div>
 
@@ -578,7 +579,7 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
                       Alterando...
                     </div>
                   ) : (
-                    '✓ Alterar'
+                    <span className="flex items-center gap-2"><Check className="w-4 h-4" /> Alterar</span>
                   )}
                 </button>
                 <button

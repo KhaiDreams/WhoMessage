@@ -246,26 +246,19 @@ class SocketService {
         isRead: false
       });
 
-      // Buscar a mensagem com dados do remetente
-      const messageWithSender = await Message.findByPk(message.id, {
-        include: [
-          {
-            model: User,
-            as: 'sender',
-            attributes: ['id', 'username', 'pfp']
-          }
-        ]
-      });
-
-      // Emitir para todos na conversa
+      // Usa socket.user (já em memória) para dados do remetente — sem re-fetch
       this.io.to(`conversation_${data.conversationId}`).emit('new_message', {
-        id: messageWithSender!.id,
-        conversationId: messageWithSender!.conversationId,
-        content: messageWithSender!.content,
-        messageType: messageWithSender!.messageType,
-        isRead: messageWithSender!.isRead,
-        createdAt: messageWithSender!.createdAt,
-        sender: messageWithSender!.sender
+        id: message.id,
+        conversationId: message.conversationId,
+        content: message.content,
+        messageType: message.messageType,
+        isRead: message.isRead,
+        createdAt: message.createdAt,
+        sender: {
+          id: socket.user.id,
+          username: socket.user.username,
+          pfp: socket.user.pfp
+        }
       });
 
       // Parar indicador de digitação

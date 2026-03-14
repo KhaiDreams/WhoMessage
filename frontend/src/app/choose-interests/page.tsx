@@ -145,7 +145,7 @@ export default function ChooseInterests() {
                 key={tag.id}
                 type="button"
                 onClick={() => handleSelect(tag.id)}
-                className={`flex flex-col items-start px-6 py-4 min-h-[64px] rounded-2xl font-semibold border-2 transition-all duration-200 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 whitespace-normal
+                className={`flex flex-col items-start px-6 py-4 min-h-[64px] rounded-2xl font-semibold border-2 transition-[transform,box-shadow,background-color,border-color] duration-150 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 whitespace-normal
                   ${isSelected
                     ? 'bg-gradient-to-r from-pink-600 via-fuchsia-700 to-indigo-700 border-primary text-white scale-105 shadow-2xl'
                     : 'bg-input-bg border-input-border text-foreground hover:bg-card hover:border-primary/60 hover:scale-105'}

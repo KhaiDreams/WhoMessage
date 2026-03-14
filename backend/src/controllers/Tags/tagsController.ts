@@ -349,20 +349,23 @@ export const getRecommendations = async (req: Request, res: Response) => {
 // Busca jogos de um usuário específico por ID
 export const getUserGamesByUserId = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-        const userIdNum = parseInt(userId);
+        const { id } = req.params;
+        const userIdNum = parseInt(id);
         
         if (!userIdNum || isNaN(userIdNum)) {
             return res.status(400).json({ error: 'ID de usuário inválido' });
         }
 
-        // Verifica se o usuário existe
-        const user = await User.findByPk(userIdNum);
+        // User existence check e tags em paralelo
+        const [user, userGames] = await Promise.all([
+            User.findByPk(userIdNum, { attributes: ['id'] }),
+            TagsGames.findOne({ where: { user_id: userIdNum } })
+        ]);
+
         if (!user) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
-        const userGames = await TagsGames.findOne({ where: { user_id: userIdNum } });
         if (!userGames || !userGames.pre_tag_ids || userGames.pre_tag_ids.length === 0) {
             return res.json({ pre_tag_ids: [] });
         }
@@ -385,20 +388,23 @@ export const getUserGamesByUserId = async (req: Request, res: Response) => {
 // Busca interesses de um usuário específico por ID
 export const getUserInterestsByUserId = async (req: Request, res: Response) => {
     try {
-        const { userId } = req.params;
-        const userIdNum = parseInt(userId);
+        const { id } = req.params;
+        const userIdNum = parseInt(id);
         
         if (!userIdNum || isNaN(userIdNum)) {
             return res.status(400).json({ error: 'ID de usuário inválido' });
         }
 
-        // Verifica se o usuário existe
-        const user = await User.findByPk(userIdNum);
+        // User existence check e tags em paralelo
+        const [user, userInterests] = await Promise.all([
+            User.findByPk(userIdNum, { attributes: ['id'] }),
+            TagsInterests.findOne({ where: { user_id: userIdNum } })
+        ]);
+
         if (!user) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
-        const userInterests = await TagsInterests.findOne({ where: { user_id: userIdNum } });
         if (!userInterests || !userInterests.pre_tag_ids || userInterests.pre_tag_ids.length === 0) {
             return res.json({ pre_tag_ids: [] });
         }

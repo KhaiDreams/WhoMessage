@@ -35,9 +35,9 @@ router.get('/tags/nicknames-user', auth, getUserNicknames);
 router.get('/tags/recommendations', searchLimiter, auth, validateQuery(recommendationsQuerySchema), getRecommendations);
 
 // Busca jogos de um usuário específico por ID (com validação)
-router.get('/tags/games-user/:userId', auth, validateParams(userIdSchema), getUserGamesByUserId);
+router.get('/tags/games-user/:id', auth, validateParams(userIdSchema), getUserGamesByUserId);
 
 // Busca interesses de um usuário específico por ID (com validação)
-router.get('/tags/interests-user/:userId', auth, validateParams(userIdSchema), getUserInterestsByUserId);
+router.get('/tags/interests-user/:id', auth, validateParams(userIdSchema), getUserInterestsByUserId);
 
 export default router;

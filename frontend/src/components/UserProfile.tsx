@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { userAPI, tagsAPI, reportsAPI, interactionsAPI } from '../lib/api';
 import { User, Tag } from '../lib/api';
 import { toast } from 'react-toastify';
+import { X, HeartCrack, AlertTriangle, Gamepad2, Heart, Cake, Sparkles, AtSign, Star } from 'lucide-react';
 
 interface UserProfileProps {
   userId: number;
@@ -37,7 +38,7 @@ const UnmatchModal = ({ user, onClose, onConfirm, isLoading }: UnmatchModalProps
             className="text-foreground/60 hover:text-foreground hover:bg-foreground/10 rounded-full p-2 transition-colors"
             disabled={isLoading}
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -45,7 +46,7 @@ const UnmatchModal = ({ user, onClose, onConfirm, isLoading }: UnmatchModalProps
         <div className="p-6">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <div className="text-yellow-500 text-3xl">💔</div>
+              <div className="text-yellow-500"><HeartCrack className="w-8 h-8" /></div>
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Tem certeza que deseja desfazer o match com <span className="text-yellow-500">{user.username}</span>?
@@ -147,7 +148,7 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
             className="text-foreground/60 hover:text-foreground hover:bg-foreground/10 rounded-full p-2 transition-colors"
             disabled={isSubmitting}
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -155,7 +156,7 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
             <div className="flex items-center gap-3 mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <div className="text-red-500 text-2xl">⚠️</div>
+              <div className="text-red-500"><AlertTriangle className="w-6 h-6" /></div>
               <div>
                 <p className="text-sm font-medium text-foreground">
                   Denunciando: <span className="text-red-500">{user.username}</span>
@@ -387,7 +388,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
             onClick={onClose}
             className="text-foreground/60 hover:text-foreground hover:bg-foreground/10 rounded-full p-2 transition-colors"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -395,15 +396,16 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
         <div className="p-6">
           <div className="text-center mb-6">
             {/* Avatar */}
-            <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center text-6xl border-4 border-primary/20 shadow-xl mb-4">
+            <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-primary/30 to-accent/20 flex items-center justify-center border-4 border-primary/20 shadow-xl mb-4">
               {user.pfp ? (
                 <img 
                   src={user.pfp} 
                   alt="Avatar" 
                   className="w-full h-full rounded-full object-cover"
+                  loading="lazy"
                 />
               ) : (
-                '🎮'
+                <Gamepad2 className="w-16 h-16 text-primary/60" />
               )}
             </div>
 
@@ -419,13 +421,13 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
               </p>
             )}
             <div className="inline-flex items-center gap-2 bg-background/30 rounded-full px-4 py-2 border border-card-border/50">
-              <span className="text-foreground/60">🎂</span>
+              <Cake className="w-4 h-4 text-foreground/60" />
               <span className="text-foreground font-medium">{user.age} anos</span>
             </div>
             {user.is_admin && (
               <div className="mt-2">
-                <span className="bg-purple-500/20 text-purple-600 px-3 py-1 rounded-full text-sm border border-purple-500/30">
-                  ⭐ ADMIN
+                <span className="bg-purple-500/20 text-purple-600 px-3 py-1 rounded-full text-sm border border-purple-500/30 flex items-center gap-1">
+                  <Star className="w-3 h-3" /> ADMIN
                 </span>
               </div>
             )}
@@ -435,7 +437,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
           {user.bio && (
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-                ✨ <span>Sobre</span>
+                <Sparkles className="w-5 h-5" /> <span>Sobre</span>
               </h4>
               <p className="text-foreground/80 leading-relaxed bg-background/30 p-4 rounded-lg border border-card-border/50 italic">
                 "{user.bio}"
@@ -446,8 +448,8 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
           {/* Nicknames */}
           {user.nicknames && user.nicknames.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center">
-                🎮 Nicknames
+              <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <AtSign className="w-5 h-5" /> Nicknames
               </h4>
               <div className="flex flex-wrap gap-2">
                 {user.nicknames.map((nickname, index) => (
@@ -465,7 +467,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
           {/* Games */}
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-              🎮 <span>Jogos Favoritos</span>
+              <Gamepad2 className="w-5 h-5" /> <span>Jogos Favoritos</span>
               {userGames.length > 0 && (
                 <span className="text-sm text-foreground/60">({userGames.length})</span>
               )}
@@ -489,7 +491,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
           {/* Interests */}
           <div className="mb-6">
             <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-              💝 <span>Interesses</span>
+              <Heart className="w-5 h-5" /> <span>Interesses</span>
               {userInterests.length > 0 && (
                 <span className="text-sm text-foreground/60">({userInterests.length})</span>
               )}
@@ -529,7 +531,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
                     onClick={() => setShowUnmatchModal(true)}
                     className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
                   >
-                    <span>💔</span>
+                    <span><HeartCrack className="w-4 h-4" /></span>
                     Desfazer Match
                   </button>
                   <button
@@ -549,7 +551,7 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
                     onClick={() => setShowReportModal(true)}
                     className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
                   >
-                    <span>⚠️</span>
+                    <span><AlertTriangle className="w-4 h-4" /></span>
                     Denunciar
                   </button>
                   <button 

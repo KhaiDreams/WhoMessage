@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import useAuth from "../../../hooks/useAuth";
 import { adminAPI, type User, type AdminUsersResponse } from "../../../lib/api";
 import { toast } from "react-toastify";
+import { Ban, Users, User as UserIcon, RefreshCw, Hammer, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FilterOptions {
   status: string;
@@ -31,7 +32,7 @@ export default function AdminUsersPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
+          <div className="mb-4 flex justify-center"><Ban className="w-16 h-16 text-red-500" /></div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
           <p className="text-foreground/60">Apenas administradores podem acessar esta página.</p>
         </div>
@@ -143,8 +144,8 @@ export default function AdminUsersPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            👥 Gerenciar Usuários
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <Users className="w-8 h-8" /> Gerenciar Usuários
           </h1>
           <p className="text-foreground/70">
             Visualize e gerencie todos os usuários da plataforma
@@ -217,7 +218,7 @@ export default function AdminUsersPage() {
               onClick={() => fetchUsers(true)}
               className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors"
             >
-              🔄 Atualizar
+              <RefreshCw className="w-4 h-4 inline mr-1" /> Atualizar
             </button>
           </div>
         </div>
@@ -231,7 +232,7 @@ export default function AdminUsersPage() {
           )}
           {users.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-4xl mb-4">👤</div>
+              <div className="mb-4 flex justify-center"><UserIcon className="w-10 h-10 text-foreground/40" /></div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Nenhum usuário encontrado</h3>
               <p className="text-foreground/60">
                 {filters.status || filters.search ? 'Não há usuários que correspondam aos filtros.' : 'Ainda não há usuários cadastrados.'}
@@ -301,7 +302,7 @@ export default function AdminUsersPage() {
                                 : 'bg-red-500 hover:bg-red-600 text-white'
                             }`}
                           >
-                            {actionLoading[userItem.id] ? '...' : (userItem.ban ? '✅ Desbanir' : '🔨 Banir')}
+                            {actionLoading[userItem.id] ? '...' : (userItem.ban ? <><CheckCircle className="w-3 h-3 inline mr-1" />Desbanir</> : <><Hammer className="w-3 h-3 inline mr-1" />Banir</>)}
                           </button>
                         )}
                         {userItem.is_admin && (
@@ -324,7 +325,7 @@ export default function AdminUsersPage() {
               disabled={filters.page <= 1}
               className="px-4 py-2 bg-card border border-card-border rounded-lg text-foreground hover:bg-card/80 transition-colors disabled:opacity-50"
             >
-              ← Anterior
+            <ChevronLeft className="w-4 h-4 inline" /> Anterior
             </button>
             
             <span className="px-4 py-2 bg-primary text-white rounded-lg">
@@ -336,7 +337,7 @@ export default function AdminUsersPage() {
               disabled={filters.page >= pagination.total_pages}
               className="px-4 py-2 bg-card border border-card-border rounded-lg text-foreground hover:bg-card/80 transition-colors disabled:opacity-50"
             >
-              Próxima →
+              Próxima <ChevronRight className="w-4 h-4 inline" />
             </button>
           </div>
         )}

@@ -7,11 +7,12 @@ import Header from "./Header";
 import Welcome from "./Welcome";
 import FeedbackButton from "./FeedbackButton";
 import useProfile from "@/hooks/useProfile";
+import { Home, MessageCircle, User } from 'lucide-react';
 
 const tabs = [
-  { key: "menu", label: "Menu", icon: "🏠" },
-  { key: "messages", label: "Mensagens", icon: "💬" },
-  { key: "profile", label: "Perfil", icon: "👤" },
+  { key: "menu", label: "Menu", Icon: Home },
+  { key: "messages", label: "Mensagens", Icon: MessageCircle },
+  { key: "profile", label: "Perfil", Icon: User },
 ];
 
 export default function MainApp() {
@@ -57,11 +58,11 @@ export default function MainApp() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-primary/10 to-secondary/10 overflow-x-hidden">
-      <Header onLogoClick={() => setTab("menu")} />
+      <Header onLogoClick={() => setTab("menu")} onNavigateToMessages={() => setTab("messages")} />
       <div className="pt-16 pb-16 min-h-screen overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4 h-full">
-          {tab === "menu" && <MenuSwipe />}
-          {tab === "messages" && <Messages />}
+          <div className={tab !== "menu" ? "hidden" : ""}><MenuSwipe /></div>
+          <div className={tab !== "messages" ? "hidden" : ""}><Messages /></div>
           {tab === "profile" && <Profile />}
         </div>
       </div>
@@ -77,7 +78,7 @@ export default function MainApp() {
               }`}
               onClick={() => setTab(t.key)}
             >
-              <span className="text-2xl mb-1">{t.icon}</span>
+              <t.Icon className="w-6 h-6 mb-1" />
               <span className="text-xs">{t.label}</span>
             </button>
           ))}

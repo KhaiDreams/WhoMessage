@@ -28,11 +28,17 @@ export const likeUser = async (req: Request, res: Response) => {
         });
 
         if (existingLike) {
-            return res.status(400).json({ error: 'Você já interagiu com este usuário.' });
+            // Permite substituir um 'pass' anterior por um 'like' (ex: curtir de volta via notificação)
+            if (existingLike.action === 'pass' && action === 'like') {
+                existingLike.action = 'like';
+                await existingLike.save();
+            } else {
+                return res.status(400).json({ error: 'Você já interagiu com este usuário.' });
+            }
         }
 
-        // Cria a curtida/pass
-        const like = await Like.create({
+        // Cria ou reutiliza a interação
+        const like = existingLike ?? await Like.create({
             from_user_id: fromUserId,
             to_user_id: to_user_id,
             action
@@ -117,18 +123,21 @@ export const getNotifications = async (req: Request, res: Response) => {
 
         const offset = (Number(page) - 1) * Number(limit);
 
-        const notifications = await Notification.findAndCountAll({
-            where: { user_id: userId },
-            include: [{
-                model: User,
-                as: 'fromUser',
-                attributes: ['id', 'username', 'pfp'],
-                required: false
-            }],
-            order: [['created_at', 'DESC']],
-            limit: Number(limit),
-            offset
-        });
+        const [notifications, unreadCount] = await Promise.all([
+            Notification.findAndCountAll({
+                where: { user_id: userId },
+                include: [{
+                    model: User,
+                    as: 'fromUser',
+                    attributes: ['id', 'username', 'pfp'],
+                    required: false
+                }],
+                order: [['created_at', 'DESC']],
+                limit: Number(limit),
+                offset
+            }),
+            Notification.count({ where: { user_id: userId, read: false } })
+        ]);
 
         res.json({
             notifications: notifications.rows,
@@ -138,9 +147,7 @@ export const getNotifications = async (req: Request, res: Response) => {
                 limit: Number(limit),
                 pages: Math.ceil(notifications.count / Number(limit))
             },
-            unreadCount: await Notification.count({
-                where: { user_id: userId, read: false }
-            })
+            unreadCount
         });
     } catch (err) {
         console.error('Notifications error:', err);
@@ -184,6 +191,19 @@ export const markAllNotificationsAsRead = async (req: Request, res: Response) =>
         res.json({ success: true, message: 'Todas as notificações foram marcadas como lidas.' });
     } catch (err) {
         res.status(500).json({ error: 'Erro ao marcar notificações', details: err });
+    }
+};
+
+// Limpar (apagar) todas as notificações do usuário
+export const clearNotifications = async (req: Request, res: Response) => {
+    try {
+        const userId = Number(req.userId);
+
+        const deleted = await Notification.destroy({ where: { user_id: userId } });
+
+        res.json({ success: true, deleted, message: 'Notificações apagadas com sucesso.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Erro ao limpar notificações', details: err });
     }
 };
 
@@ -258,24 +278,33 @@ export const getPendingLikes = async (req: Request, res: Response) => {
         });
 
         // Filtra apenas os que não viraram match ainda
-        const likesWithoutMatch = [];
-        for (const like of pendingLikes) {
-            const existingMatch = await Match.findOne({
+        const fromUserIds = pendingLikes.map(like => like.from_user_id);
+
+        // Busca todos os matches relevantes em UMA query (evita N+1)
+        const existingMatches = fromUserIds.length > 0
+            ? await Match.findAll({
                 where: {
                     [Op.or]: [
-                        { user1_id: Math.min(userId, like.from_user_id), user2_id: Math.max(userId, like.from_user_id) }
+                        { user1_id: userId, user2_id: { [Op.in]: fromUserIds } },
+                        { user1_id: { [Op.in]: fromUserIds }, user2_id: userId }
                     ]
-                }
-            });
-            
-            if (!existingMatch) {
-                likesWithoutMatch.push({
-                    id: like.id,
-                    created_at: like.created_at,
-                    fromUser: (like as any).fromUser
-                });
-            }
-        }
+                },
+                attributes: ['user1_id', 'user2_id']
+            })
+            : [];
+
+        const matchedUserIds = new Set<number>();
+        existingMatches.forEach((m: any) => {
+            matchedUserIds.add(m.user1_id === userId ? m.user2_id : m.user1_id);
+        });
+
+        const likesWithoutMatch = pendingLikes
+            .filter(like => !matchedUserIds.has(like.from_user_id))
+            .map(like => ({
+                id: like.id,
+                created_at: like.created_at,
+                fromUser: (like as any).fromUser
+            }));
 
         res.json(likesWithoutMatch);
     } catch (err) {

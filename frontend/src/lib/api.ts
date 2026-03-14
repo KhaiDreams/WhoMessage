@@ -325,7 +325,10 @@ export const notificationsAPI = {
     api.put(`/api/notifications/${notificationId}/read`),
   
   markAllAsRead: () => 
-    api.put('/api/notifications/mark-all-read')
+    api.put('/api/notifications/mark-all-read'),
+  
+  clearAll: () =>
+    api.delete('/api/notifications')
 };
 
 // Tags
