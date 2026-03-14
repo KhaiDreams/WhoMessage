@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "../../hooks/useAuth";
 import { reportsAPI, adminAPI } from "../../lib/api";
+import { Ban, Users, Flag, FileText, Settings, Zap, Hammer, Clock, Crown, RefreshCw, ChevronRight, ChevronLeft } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -15,7 +16,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
+          <div className="mb-4 flex justify-center"><Ban className="w-16 h-16 text-red-500" /></div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Acesso Negado</h1>
           <p className="text-foreground/60">Apenas administradores podem acessar esta página.</p>
         </div>
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
 
   const adminSections = [
     {
-      title: "👥 Usuários",
+      title: "Usuários",
       description: "Gerenciar usuários da plataforma",
       route: "/admin/users",
       stats: dashboardStats?.users ? [
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
       ] : []
     },
     {
-      title: "🚨 Reports",
+      title: "Reports",
       description: "Gerenciar reports e moderação",
       route: "/admin/reports",
       stats: dashboardStats?.reports ? [
@@ -71,7 +72,7 @@ export default function AdminDashboard() {
       ] : []
     },
     {
-      title: "📝 Feedbacks",
+      title: "Feedbacks",
       description: "Visualizar feedbacks dos usuários",
       route: "/admin/feedback",
       stats: []
@@ -94,8 +95,8 @@ export default function AdminDashboard() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            ⚙️ Painel Administrativo
+          <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <Settings className="w-9 h-9" /> Painel Administrativo
           </h1>
           <p className="text-foreground/70">
             Bem-vindo, {user?.username}! Gerencie a plataforma WhoMessage
@@ -138,7 +139,7 @@ export default function AdminDashboard() {
               {/* Seta indicativa */}
               <div className="flex justify-end mt-4">
                 <div className="text-primary/50 group-hover:text-primary transition-colors">
-                  →
+                  <ChevronRight className="w-5 h-5" />
                 </div>
               </div>
             </div>
@@ -147,14 +148,14 @@ export default function AdminDashboard() {
 
         {/* Ações Rápidas */}
         <div className="bg-card rounded-xl p-6 border border-card-border">
-          <h3 className="text-xl font-bold text-foreground mb-4">🚀 Ações Rápidas</h3>
+          <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2"><Zap className="w-5 h-5" /> Ações Rápidas</h3>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => router.push("/admin/users?status=banned")}
               className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 hover:bg-red-500/20 transition-colors text-left"
             >
-              <div className="text-red-500 font-medium">🔨 Usuários Banidos</div>
+              <div className="text-red-500 font-medium flex items-center gap-2"><Hammer className="w-4 h-4" /> Usuários Banidos</div>
               <div className="text-sm text-foreground/60 mt-1">
                 {dashboardStats?.users?.banned || 0} usuários
               </div>
@@ -164,7 +165,7 @@ export default function AdminDashboard() {
               onClick={() => router.push("/admin/reports?status=pending")}
               className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 hover:bg-yellow-500/20 transition-colors text-left"
             >
-              <div className="text-yellow-600 font-medium">⏳ Reports Pendentes</div>
+              <div className="text-yellow-600 font-medium flex items-center gap-2"><Clock className="w-4 h-4" /> Reports Pendentes</div>
               <div className="text-sm text-foreground/60 mt-1">
                 {dashboardStats?.reports?.reports_by_status.find((s: any) => s.status === 'pending')?.count || 0} reports
               </div>
@@ -174,7 +175,7 @@ export default function AdminDashboard() {
               onClick={() => router.push("/admin/users?status=admin")}
               className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 hover:bg-purple-500/20 transition-colors text-left"
             >
-              <div className="text-purple-500 font-medium">👑 Administradores</div>
+              <div className="text-purple-500 font-medium flex items-center gap-2"><Crown className="w-4 h-4" /> Administradores</div>
               <div className="text-sm text-foreground/60 mt-1">
                 {dashboardStats?.users?.admins || 0} admins
               </div>
@@ -184,7 +185,7 @@ export default function AdminDashboard() {
               onClick={() => window.location.reload()}
               className="bg-primary/10 border border-primary/20 rounded-lg p-4 hover:bg-primary/20 transition-colors text-left"
             >
-              <div className="text-primary font-medium">🔄 Atualizar Dados</div>
+              <div className="text-primary font-medium flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Atualizar Dados</div>
               <div className="text-sm text-foreground/60 mt-1">
                 Recarregar estatísticas
               </div>
@@ -198,7 +199,7 @@ export default function AdminDashboard() {
             onClick={() => router.push("/home")}
             className="text-foreground/60 hover:text-foreground transition-colors"
           >
-            ← Voltar para Home
+            <ChevronLeft className="w-4 h-4 inline" /> Voltar para Home
           </button>
         </div>
       </div>

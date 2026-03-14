@@ -60,11 +60,6 @@ export const useRecommendations = () => {
             autoClose: 2000,
           });
         }
-      } else {
-        toast.info('👋 Usuário passou para o próximo', {
-          position: "top-right",
-          autoClose: 1500,
-        });
       }
 
       return response;
