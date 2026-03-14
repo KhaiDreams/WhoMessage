@@ -12,7 +12,7 @@ import {
 import auth from '../middlewares/auth';
 import { interactionLimiter } from '../middlewares/rateLimiter';
 import { validateRequest, validateParams } from '../middlewares/validation';
-import { interactionSchema, notificationIdSchema, userIdSchema } from '../validators/commonValidators';
+import { interactionSchema, notificationIdSchema, userIdSchema, matchIdSchema } from '../validators/commonValidators';
 
 const router = Router();
 
@@ -38,6 +38,6 @@ router.get('/matches', auth, getMatches);
 router.get('/interactions/pending-likes', auth, getPendingLikes);
 
 // Desfazer match (com validação de parâmetro)
-router.delete('/matches/:matchId', auth, validateParams(userIdSchema), unmatch);
+router.delete('/matches/:matchId', auth, validateParams(matchIdSchema), unmatch);
 
 export default router;
