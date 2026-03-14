@@ -73,14 +73,6 @@ export const createReport = async (req: Request<{}, {}, ReportRequestBody>, res:
 // Listar todos os reports (apenas para admins)
 export const listReports = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
-        
-        // Verificar se é admin
-        const user = await User.findByPk(userId);
-        if (!user?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
-
         const { status, page = 1, limit = 20, search, banned, username, email, reason } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
 
@@ -153,15 +145,8 @@ export const listReports = async (req: Request, res: Response) => {
 // Atualizar status de um report (apenas para admins)
 export const updateReportStatus = async (req: Request<{ id: string }, {}, AdminActionBody>, res: Response) => {
     try {
-        const userId = req.userId;
         const reportId = req.params.id;
         const { status, admin_notes } = req.body;
-
-        // Verificar se é admin
-        const user = await User.findByPk(userId);
-        if (!user?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
 
         const report = await Report.findByPk(reportId, {
             include: [
@@ -200,15 +185,8 @@ export const updateReportStatus = async (req: Request<{ id: string }, {}, AdminA
 // Banir usuário através de um report
 export const banUserFromReport = async (req: Request<{ id: string }, {}, AdminActionBody>, res: Response) => {
     try {
-        const userId = req.userId;
         const reportId = req.params.id;
         const { admin_notes } = req.body;
-
-        // Verificar se é admin
-        const user = await User.findByPk(userId);
-        if (!user?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
 
         const report = await Report.findByPk(reportId, {
             include: [
@@ -234,7 +212,7 @@ export const banUserFromReport = async (req: Request<{ id: string }, {}, AdminAc
 
         // Atualizar o report
         report.status = 'resolved';
-        report.admin_notes = admin_notes || `Usuário banido pelo admin ${user.username}`;
+        report.admin_notes = admin_notes || `Usuário banido pelo admin ${req.currentUser!.username}`;
         await report.save();
 
         res.json({ 
@@ -255,15 +233,8 @@ export const banUserFromReport = async (req: Request<{ id: string }, {}, AdminAc
 // Desbanir usuário
 export const unbanUser = async (req: Request<{ userId: string }, {}, { admin_notes?: string }>, res: Response) => {
     try {
-        const adminId = req.userId;
         const targetUserId = req.params.userId;
         const { admin_notes } = req.body;
-
-        // Verificar se é admin
-        const admin = await User.findByPk(adminId);
-        if (!admin?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
 
         const targetUser = await User.findByPk(targetUserId);
         if (!targetUser) {
@@ -282,7 +253,7 @@ export const unbanUser = async (req: Request<{ userId: string }, {}, { admin_not
         await Report.update(
             { 
                 status: 'dismissed',
-                admin_notes: admin_notes || `Usuário desbanido pelo admin ${admin.username}`
+                admin_notes: admin_notes || `Usuário desbanido pelo admin ${req.currentUser!.username}`
             },
             { 
                 where: { 
@@ -309,13 +280,6 @@ export const unbanUser = async (req: Request<{ userId: string }, {}, { admin_not
 // Estatísticas de reports (para admin dashboard)
 export const getReportsStats = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
-
-        // Verificar se é admin
-        const user = await User.findByPk(userId);
-        if (!user?.is_admin) {
-            return res.status(403).json({ message: 'Acesso negado. Apenas administradores.' });
-        }
 
         const stats = await Report.findAll({
             attributes: [
