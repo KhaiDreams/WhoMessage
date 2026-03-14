@@ -104,12 +104,12 @@ function ProfileComponent({ user, userGames, userInterests, onProfileUpdate }: P
     );
   };
 
-  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMAGE_SIZE) {
-      toast.error('Imagem muito grande! Escolha uma imagem menor que 5MB.');
+      toast.error('Imagem muito grande! Escolha uma imagem menor que 8MB.');
       return;
     }
     if (avatarPreview) URL.revokeObjectURL(avatarPreview);
