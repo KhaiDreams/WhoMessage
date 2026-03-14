@@ -1,4 +1,4 @@
-# WhoMessage 🤔💭
+# WhoMessage
 
 **WhoMessage** é uma rede social gratuita e de código aberto feita para gamers, mas qualquer pessoa pode entrar no aplicativo e utilizar para conhecer pessoas.  
 Aqui, você pode enviar mensagens para amigos, inimigos, crushes (ou quem mais quiser).  
@@ -62,7 +62,7 @@ Toda contribuição é bem-vinda! 💬
 
 ## 🧑‍💻 Autor
 
-Criado com ❤️ por **KhaiDreams**
+**KhaiDreams**
 
 ---
 
