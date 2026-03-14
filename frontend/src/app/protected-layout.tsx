@@ -54,8 +54,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     check();
   }, [mounted, pathname, router]);
 
-  // Antes de montar: servidor e cliente renderizam o mesmo markup → sem hydration mismatch
-  if (!mounted) return <Loader />;
+  // Retorna null enquanto não está montado: garante que server e client renderizam
+  // exatamente o mesmo HTML inicial (nada), eliminando o hydration mismatch.
+  if (!mounted) return null;
   if (isAllowed === null) return <Loader />;
   if (!isAllowed) return null;
   return <>{children}</>;

@@ -109,13 +109,13 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const reportReasons = [
-    'Comportamento inapropriado',
-    'Assédio ou bullying',
-    'Spam ou conteúdo comercial',
-    'Perfil falso',
-    'Conteúdo ofensivo',
-    'Outros'
+  const reportReasons: { label: string; value: string }[] = [
+    { label: 'Comportamento inapropriado', value: 'inappropriate_content' },
+    { label: 'Assédio ou bullying', value: 'harassment' },
+    { label: 'Spam ou conteúdo comercial', value: 'spam' },
+    { label: 'Perfil falso', value: 'fake_profile' },
+    { label: 'Conteúdo ofensivo', value: 'inappropriate_content' },
+    { label: 'Outros', value: 'other' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,7 +181,7 @@ const ReportModal = ({ user, onClose, onSubmit }: ReportModalProps) => {
             >
               <option value="" className="bg-input-bg text-input-text">Selecione um motivo</option>
               {reportReasons.map((r, index) => (
-                <option key={index} value={r} className="bg-input-bg text-input-text">{r}</option>
+                <option key={index} value={r.value} className="bg-input-bg text-input-text">{r.label}</option>
               ))}
             </select>
           </div>

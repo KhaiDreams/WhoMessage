@@ -512,26 +512,23 @@ export default function MenuSwipe() {
               <div className="space-y-3 mb-4">
                 <div className="text-sm font-semibold text-foreground/90 mb-2">Motivo:</div>
                 {[
-                  'Conteúdo ofensivo ou inadequado',
-                  'Perfil falso ou enganoso',
-                  'Comportamento suspeito',
-                  'Spam ou golpe',
-                  'Assédio ou intimidação',
-                  'Conteúdo sexual impróprio',
-                  'Discurso de ódio',
-                  'Outro'
-                ].map((reason) => (
-                  <label key={reason} className="flex items-center gap-3">
+                  { label: 'Conteúdo ofensivo ou inadequado', value: 'inappropriate_content' },
+                  { label: 'Perfil falso ou enganoso', value: 'fake_profile' },
+                  { label: 'Spam ou golpe', value: 'spam' },
+                  { label: 'Assédio ou intimidação', value: 'harassment' },
+                  { label: 'Outro', value: 'other' },
+                ].map((r) => (
+                  <label key={r.value} className="flex items-center gap-3">
                     <input 
                       type="radio"
                       name="report-reason"
-                      value={reason}
-                      checked={reportReason === reason}
-                      onChange={(e) => setReportReason(e.target.value)}
+                      value={r.value}
+                      checked={reportReason === r.value}
+                      onChange={() => setReportReason(r.value)}
                       className="text-primary focus:ring-primary"
                       disabled={isSubmittingReport}
                     />
-                    <span className="text-sm text-foreground/80">{reason}</span>
+                    <span className="text-sm text-foreground/80">{r.label}</span>
                   </label>
                 ))}
               </div>
