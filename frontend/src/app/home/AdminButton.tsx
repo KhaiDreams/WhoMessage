@@ -1,29 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { userAPI } from "@/lib/api";
 import { Settings, LayoutDashboard, Users, Flag, FileText } from 'lucide-react';
 
 export default function AdminButton() {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const isAdmin = typeof window !== 'undefined' && localStorage.getItem('is_admin') === 'true';
   const [showMenu, setShowMenu] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const res = await userAPI.getProfile();
-        const user = (res as any)?.user;
-        setIsAdmin(!!user && user.is_admin === true);
-      } catch {
-        setIsAdmin(false);
-      }
-    }
-    checkAdmin();
-  }, []);
-
-  // still loading user info
-  if (isAdmin === null) return null;
 
   if (!isAdmin) return null;
 
