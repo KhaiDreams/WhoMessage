@@ -81,6 +81,9 @@ export default function useAuth() {
         router.push('/choose-interests');
         return;
       }
+      // Persiste is_admin para acesso sem request extra
+      localStorage.setItem('is_admin', user.is_admin ? 'true' : 'false');
+
       setState({
         isAuthenticated: true,
         hasProfile,
