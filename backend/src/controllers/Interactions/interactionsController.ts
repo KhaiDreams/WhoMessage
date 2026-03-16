@@ -3,6 +3,7 @@ import { Like } from '../../models/Interactions/Like';
 import { Match } from '../../models/Interactions/Match';
 import { Notification } from '../../models/Interactions/Notification';
 import { User } from '../../models/Users/User';
+import sequelize from '../../database/db';
 
 // Curtir ou passar um usuário
 export const likeUser = async (req: Request, res: Response) => {
@@ -18,98 +19,144 @@ export const likeUser = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Você não pode curtir a si mesmo.' });
         }
 
-        // Verifica se já existe uma interação
-        const { Op } = require('sequelize');
-        const existingLike = await Like.findOne({
-            where: {
-                from_user_id: fromUserId,
-                to_user_id: to_user_id
-            }
-        });
-
-        if (existingLike) {
-            // Permite substituir um 'pass' anterior por um 'like' (ex: curtir de volta via notificação)
-            if (existingLike.action === 'pass' && action === 'like') {
-                existingLike.action = 'like';
-                await existingLike.save();
-            } else {
-                return res.status(400).json({ error: 'Você já interagiu com este usuário.' });
-            }
-        }
-
-        // Cria ou reutiliza a interação
-        const like = existingLike ?? await Like.create({
-            from_user_id: fromUserId,
-            to_user_id: to_user_id,
-            action
-        });
-
-        // Se foi um like, verifica se há match
-        let match = null;
-        if (action === 'like') {
-            // Verifica se o outro usuário também curtiu
-            const reciprocalLike = await Like.findOne({
-                where: {
-                    from_user_id: to_user_id,
-                    to_user_id: fromUserId,
-                    action: 'like'
-                }
+        const result = await sequelize.transaction(async (transaction) => {
+            const targetUser = await User.findByPk(to_user_id, {
+                attributes: ['id', 'username', 'active', 'ban'],
+                transaction,
+                lock: transaction.LOCK.UPDATE
             });
 
-            if (reciprocalLike) {
-                // Cria o match (user1_id sempre menor que user2_id para evitar duplicatas)
-                const user1_id = Math.min(fromUserId, to_user_id);
-                const user2_id = Math.max(fromUserId, to_user_id);
+            if (!targetUser) {
+                throw { status: 404, error: 'Usuário alvo não encontrado.' };
+            }
 
-                match = await Match.create({
-                    user1_id,
-                    user2_id
+            if (targetUser.ban || targetUser.active === false) {
+                throw { status: 403, error: 'Usuário indisponível para interação.' };
+            }
+
+            let existingLike = await Like.findOne({
+                where: {
+                    from_user_id: fromUserId,
+                    to_user_id: to_user_id
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+
+            if (existingLike) {
+                // Permite substituir um 'pass' anterior por um 'like' (ex: curtir de volta via notificação)
+                if (existingLike.action === 'pass' && action === 'like') {
+                    existingLike.action = 'like';
+                    await existingLike.save({ transaction });
+                } else {
+                    throw { status: 400, error: 'Você já interagiu com este usuário.' };
+                }
+            }
+
+            // Cria ou reutiliza a interação
+            if (!existingLike) {
+                existingLike = await Like.create({
+                    from_user_id: fromUserId,
+                    to_user_id: to_user_id,
+                    action
+                }, { transaction });
+            }
+
+            // Se foi um like, verifica se há match
+            let match = null;
+            let isMatchCreated = false;
+            if (action === 'like') {
+                // Verifica se o outro usuário também curtiu
+                const reciprocalLike = await Like.findOne({
+                    where: {
+                        from_user_id: to_user_id,
+                        to_user_id: fromUserId,
+                        action: 'like'
+                    },
+                    transaction,
+                    lock: transaction.LOCK.UPDATE
                 });
 
-                // Busca dados dos usuários para notificações
-                const [fromUser, toUser] = await Promise.all([
-                    User.findByPk(fromUserId, { attributes: ['id', 'username'] }),
-                    User.findByPk(to_user_id, { attributes: ['id', 'username'] })
-                ]);
+                if (reciprocalLike) {
+                    // Cria ou reativa o match (user1_id sempre menor que user2_id para evitar duplicatas)
+                    const user1_id = Math.min(fromUserId, to_user_id);
+                    const user2_id = Math.max(fromUserId, to_user_id);
 
-                // Cria notificações de match para ambos
-                await Promise.all([
-                    Notification.create({
-                        user_id: fromUserId,
-                        from_user_id: to_user_id,
-                        type: 'match_created',
-                        title: '🎉 Novo Match!',
-                        message: `Você e ${toUser?.username} se curtiram! Agora vocês podem conversar.`
-                    }),
-                    Notification.create({
+                    match = await Match.findOne({
+                        where: { user1_id, user2_id },
+                        transaction,
+                        lock: transaction.LOCK.UPDATE
+                    });
+
+                    if (!match) {
+                        match = await Match.create({
+                            user1_id,
+                            user2_id
+                        }, { transaction });
+                        isMatchCreated = true;
+                    } else if (!match.chat_active) {
+                        match.chat_active = true;
+                        await match.save({ transaction });
+                        isMatchCreated = true;
+                    }
+
+                    if (isMatchCreated) {
+                        // Cria notificações de match para ambos
+                        const fromUsername = req.currentUser?.username ?? 'alguém';
+                        await Promise.all([
+                            Notification.create({
+                                user_id: fromUserId,
+                                from_user_id: to_user_id,
+                                type: 'match_created',
+                                title: '🎉 Novo Match!',
+                                message: `Você e ${targetUser.username} se curtiram! Agora vocês podem conversar.`
+                            }, { transaction }),
+                            Notification.create({
+                                user_id: to_user_id,
+                                from_user_id: fromUserId,
+                                type: 'match_created',
+                                title: '🎉 Novo Match!',
+                                message: `Você e ${fromUsername} se curtiram! Agora vocês podem conversar.`
+                            }, { transaction })
+                        ]);
+                    }
+                } else {
+                    // Apenas um like, cria notificação para o usuário que recebeu
+                    const fromUsername = req.currentUser?.username
+                        ?? (await User.findByPk(fromUserId, { attributes: ['username'], transaction }))?.username
+                        ?? 'alguém';
+
+                    await Notification.create({
                         user_id: to_user_id,
                         from_user_id: fromUserId,
-                        type: 'match_created',
-                        title: '🎉 Novo Match!',
-                        message: `Você e ${fromUser?.username} se curtiram! Agora vocês podem conversar.`
-                    })
-                ]);
-            } else {
-                // Apenas um like, cria notificação para o usuário que recebeu
-                const fromUser = await User.findByPk(fromUserId, { attributes: ['id', 'username'] });
-                
-                await Notification.create({
-                    user_id: to_user_id,
-                    from_user_id: fromUserId,
-                    type: 'like_received',
-                    title: '💖 Alguém curtiu você!',
-                    message: `${fromUser?.username} curtiu seu perfil! Que tal dar uma olhada?`
-                });
+                        type: 'like_received',
+                        title: '💖 Alguém curtiu você!',
+                        message: `${fromUsername} curtiu seu perfil! Que tal dar uma olhada?`
+                    }, { transaction });
+                }
             }
-        }
+
+            return {
+                action,
+                match: isMatchCreated
+            };
+        });
 
         res.json({
             success: true,
-            action,
-            match: !!match,
-            message: match ? 'É um match! 🎉' : action === 'like' ? 'Like enviado!' : 'Usuário passado.'
+            action: result.action,
+            match: result.match,
+            message: result.match ? 'É um match! 🎉' : result.action === 'like' ? 'Like enviado!' : 'Usuário passado.'
         });
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.status) {
+            return res.status(err.status).json({ error: err.error });
+        }
+
+        if (err?.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ error: 'Interação já registrada. Atualize a tela e tente novamente.' });
+        }
+
         console.error('Like error:', err);
         res.status(500).json({ error: 'Erro ao processar like' });
     }
@@ -120,6 +167,7 @@ export const getNotifications = async (req: Request, res: Response) => {
     try {
         const userId = Number(req.userId);
         const { page = 1, limit = 20 } = req.query;
+        const { Op } = require('sequelize');
 
         const offset = (Number(page) - 1) * Number(limit);
 
@@ -139,8 +187,56 @@ export const getNotifications = async (req: Request, res: Response) => {
             Notification.count({ where: { user_id: userId, read: false } })
         ]);
 
+        const likeNotifications = notifications.rows.filter((n: any) => n.type === 'like_received' && n.from_user_id);
+        const fromUserIds = Array.from(new Set(likeNotifications.map((n: any) => Number(n.from_user_id))));
+
+        let interactedUserIds = new Set<number>();
+
+        if (fromUserIds.length > 0) {
+            const [alreadyInteracted, existingMatches] = await Promise.all([
+                Like.findAll({
+                    where: {
+                        from_user_id: userId,
+                        to_user_id: { [Op.in]: fromUserIds }
+                    },
+                    attributes: ['to_user_id']
+                }),
+                Match.findAll({
+                    where: {
+                        [Op.or]: [
+                            { user1_id: userId, user2_id: { [Op.in]: fromUserIds } },
+                            { user1_id: { [Op.in]: fromUserIds }, user2_id: userId }
+                        ]
+                    },
+                    attributes: ['user1_id', 'user2_id']
+                })
+            ]);
+
+            alreadyInteracted.forEach((like: any) => interactedUserIds.add(Number(like.to_user_id)));
+            existingMatches.forEach((match: any) => {
+                const otherId = Number(match.user1_id) === userId ? Number(match.user2_id) : Number(match.user1_id);
+                interactedUserIds.add(otherId);
+            });
+        }
+
+        const formattedNotifications = notifications.rows.map((notification: any) => {
+            const plain = notification.toJSON ? notification.toJSON() : notification;
+
+            if (plain.type === 'like_received' && plain.from_user_id) {
+                return {
+                    ...plain,
+                    canLikeBack: !interactedUserIds.has(Number(plain.from_user_id))
+                };
+            }
+
+            return {
+                ...plain,
+                canLikeBack: false
+            };
+        });
+
         res.json({
-            notifications: notifications.rows,
+            notifications: formattedNotifications,
             pagination: {
                 total: notifications.count,
                 page: Number(page),
