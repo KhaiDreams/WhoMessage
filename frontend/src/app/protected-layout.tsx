@@ -63,15 +63,24 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    if (!hasGames && currentPath !== "/choose-games") {
-      router.replace("/choose-games");
-      setIsAllowed(false);
+    // Onboarding sequencial para evitar loop entre choose-games e choose-interests.
+    if (!hasGames) {
+      if (currentPath !== "/choose-games") {
+        router.replace("/choose-games");
+        setIsAllowed(false);
+        return;
+      }
+      setIsAllowed(true);
       return;
     }
 
-    if (!hasInterests && currentPath !== "/choose-interests") {
-      router.replace("/choose-interests");
-      setIsAllowed(false);
+    if (!hasInterests) {
+      if (currentPath !== "/choose-interests") {
+        router.replace("/choose-interests");
+        setIsAllowed(false);
+        return;
+      }
+      setIsAllowed(true);
       return;
     }
 
