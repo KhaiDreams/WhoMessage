@@ -119,6 +119,18 @@ export const listReports = async (req: Request, res: Response) => {
             ];
         }
 
+        if (reason) {
+            whereClause.reason = { [Op.iLike]: `%${reason}%` };
+        }
+
+        if (username) {
+            whereClause['$reportedUser.username$'] = { [Op.iLike]: `%${username}%` };
+        }
+
+        if (email) {
+            whereClause['$reportedUser.email$'] = { [Op.iLike]: `%${email}%` };
+        }
+
         const reports = await Report.findAndCountAll({
             where: whereClause,
             include: includeClause,
