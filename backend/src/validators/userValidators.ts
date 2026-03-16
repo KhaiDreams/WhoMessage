@@ -54,7 +54,6 @@ export const registerSchema = Joi.object({
   pfp: Joi.string().uri({ scheme: ['http', 'https'] }).allow('').optional(),
 
   nicknames: Joi.array().items(Joi.string().trim()).optional(),
-  active: Joi.boolean().optional()
 });
 
 // Schema para login
