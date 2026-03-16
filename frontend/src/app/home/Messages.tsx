@@ -6,6 +6,8 @@ import { useSocket } from "@/hooks/useSocket";
 import UserProfile from "@/components/UserProfile";
 import { AlertTriangle, Gamepad2, MessageCircle, Check, CheckCheck, Image, Paperclip, Send, ChevronRight, ChevronLeft, Lightbulb, Heart } from 'lucide-react';
 
+const MESSAGES_OPENED_EVENT = "whomessage:messages-opened";
+
 interface ConversationWithMatch {
   id: number;
   matchId: number;
@@ -125,8 +127,7 @@ export default function Messages() {
     markAsRead,
     unreadCount,
     conversations,
-    setConversations,
-    socket
+    setConversations
   } = useSocket();
 
   // Memoized conversations with matches data
@@ -262,18 +263,16 @@ export default function Messages() {
         });
       }, 1000); // Delay to prevent blocking initial render
     }
-    
-    // Force sync conversations every 30 seconds to ensure data is fresh
-    const syncInterval = setInterval(() => {
-      if (connected && socket) {
-        socket.emit('get_conversations');
-      }
-    }, 30000); // 30 seconds
-    
-    return () => {
-      clearInterval(syncInterval);
+  }, []);
+
+  useEffect(() => {
+    const onMessagesOpened = () => {
+      fetchMatches();
     };
-  }, [connected, socket]);
+
+    window.addEventListener(MESSAGES_OPENED_EVENT, onMessagesOpened);
+    return () => window.removeEventListener(MESSAGES_OPENED_EVENT, onMessagesOpened);
+  }, [fetchMatches]);
   
   const handleSelectMatch = async (matchId: number) => {
     const matchData = conversationsWithMatches.find(c => c.id === matchId);
@@ -288,11 +287,31 @@ export default function Messages() {
       }
       
       let conversationId = matchData.conversationId;
+      let shouldUpsertConversation = false;
       
       // Se não tem conversa ainda, criar uma
       if (!conversationId) {
         const { conversation: newConv } = await getOrCreateConversation(matchData.otherUser.id);
         conversationId = newConv.id;
+        shouldUpsertConversation = true;
+      }
+
+      if (shouldUpsertConversation && conversationId) {
+        setConversations(prev => {
+          if (prev.some(conv => conv.id === conversationId)) return prev;
+          return [
+            {
+              id: conversationId,
+              chatPartner: {
+                id: matchData.otherUser.id,
+                username: matchData.otherUser.username,
+                pfp: matchData.otherUser.pfp
+              },
+              updatedAt: new Date().toISOString()
+            },
+            ...prev
+          ];
+        });
       }
       
       // Set selected and conversation
@@ -312,6 +331,26 @@ export default function Messages() {
       // Carregar mensagens
       const { messages: messagesList } = await getMessages(conversationId);
       setMessages(messagesList);
+
+      const lastLoadedMessage = messagesList[messagesList.length - 1];
+      if (lastLoadedMessage) {
+        setConversations(prev => prev.map(conv => (
+          conv.id === conversationId
+            ? {
+                ...conv,
+                lastMessage: {
+                  id: lastLoadedMessage.id,
+                  content: lastLoadedMessage.content,
+                  messageType: lastLoadedMessage.messageType,
+                  senderId: lastLoadedMessage.sender.id,
+                  isFromMe: lastLoadedMessage.isFromMe,
+                  createdAt: lastLoadedMessage.createdAt
+                },
+                updatedAt: lastLoadedMessage.createdAt
+              }
+            : conv
+        )));
+      }
       
       // Mark messages as read
       markAsRead(conversationId);

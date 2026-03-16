@@ -5,7 +5,6 @@ import Messages from "./Messages";
 import Profile from "./Profile";
 import Header from "./Header";
 import Welcome from "./Welcome";
-import useProfile from "@/hooks/useProfile";
 import { Home, MessageCircle, User } from 'lucide-react';
 
 const tabs = [
@@ -14,18 +13,23 @@ const tabs = [
   { key: "profile", label: "Perfil", Icon: User },
 ];
 
+const MESSAGES_OPENED_EVENT = "whomessage:messages-opened";
+
 export default function MainApp() {
   const [tab, setTab] = useState("menu");
   const [showWelcome, setShowWelcome] = useState(true);
-  const { isAuthenticated } = useProfile();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // Verificar autenticação
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const hasToken = !!localStorage.getItem('token');
+    setIsAuthenticated(hasToken);
+
+    if (!hasToken) {
       window.location.href = '/login';
       return;
     }
-  }, [isAuthenticated]);
+  }, []);
 
   // Simular verificação se é primeira vez do usuário
   useEffect(() => {
@@ -40,7 +44,12 @@ export default function MainApp() {
     setShowWelcome(false);
   };
 
-  if (!isAuthenticated()) {
+  const openMessagesTab = () => {
+    setTab("messages");
+    window.dispatchEvent(new Event(MESSAGES_OPENED_EVENT));
+  };
+
+  if (isAuthenticated === null || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -57,7 +66,7 @@ export default function MainApp() {
 
   return (
     <div className="h-dvh w-full bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden">
-      <Header onLogoClick={() => setTab("menu")} onNavigateToMessages={() => setTab("messages")} />
+      <Header onLogoClick={() => setTab("menu")} onNavigateToMessages={openMessagesTab} />
       <div className="pt-16 pb-16 h-full overflow-hidden">
         <div className="h-full">
           <div className={tab !== "menu" ? "hidden" : "h-full"}><MenuSwipe /></div>
@@ -75,7 +84,13 @@ export default function MainApp() {
                   ? 'text-primary font-bold' 
                   : 'text-foreground/60 hover:text-foreground/80'
               }`}
-              onClick={() => setTab(t.key)}
+              onClick={() => {
+                if (t.key === "messages") {
+                  openMessagesTab();
+                  return;
+                }
+                setTab(t.key);
+              }}
             >
               <t.Icon className="w-6 h-6 mb-1" />
               <span className="text-xs">{t.label}</span>
