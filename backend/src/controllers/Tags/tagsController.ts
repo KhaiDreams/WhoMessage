@@ -2,9 +2,121 @@ import { TagsInterests } from '../../models/Tags/TagsInterests';
 import { TagsGames } from '../../models/Tags/TagsGames';
 import { User } from '../../models/Users/User';
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { PreTagsInterests } from '../../models/Tags/PreTagsInterests';
 import { PreTagsGames } from '../../models/Tags/PreTagsGames';
 import { Nicknames } from '../../models/Tags/Nicknames';
+import { Like } from '../../models/Interactions/Like';
+import { Match } from '../../models/Interactions/Match';
+
+const TAG_CACHE_TTL_MS = 10 * 60 * 1000;
+let tagsCache: {
+    expiresAt: number;
+    gameTagsMap: Record<number, string>;
+    interestTagsMap: Record<number, string>;
+} | null = null;
+
+const RECOMMENDATIONS_CACHE_TTL_MS = Number(process.env.RECOMMENDATIONS_CACHE_TTL_MS || 20_000);
+const RECOMMENDATIONS_CANDIDATE_WINDOW = Math.max(
+    Number(process.env.RECOMMENDATIONS_CANDIDATE_WINDOW || 400),
+    120
+);
+
+type RecommendationEntry = {
+    user: any;
+    compatibility: 'perfect' | 'high' | 'good' | 'medium' | 'low';
+    totalScore: number;
+    gameScore: number;
+    interestScore: number;
+    matches: {
+        games: {
+            count: number;
+            common: Array<{ id: number; name: string }>;
+            total: number;
+        };
+        interests: {
+            count: number;
+            common: Array<{ id: number; name: string }>;
+            total: number;
+        };
+    };
+    percentage: number;
+};
+
+type RecommendationPayload = {
+    message: string;
+    stats: {
+        perfect: number;
+        high: number;
+        good: number;
+        medium: number;
+        low: number;
+    };
+    userProfile: {
+        games: number;
+        interests: number;
+    };
+    recommendations: RecommendationEntry[];
+};
+
+type RecommendationCacheEntry = {
+    expiresAt: number;
+    tagSignature: string;
+    payload: RecommendationPayload;
+};
+
+const recommendationsCache = new Map<number, RecommendationCacheEntry>();
+
+function getRecommendationStats(recommendations: RecommendationEntry[]) {
+    return {
+        perfect: recommendations.filter(r => r.compatibility === 'perfect').length,
+        high: recommendations.filter(r => r.compatibility === 'high').length,
+        good: recommendations.filter(r => r.compatibility === 'good').length,
+        medium: recommendations.filter(r => r.compatibility === 'medium').length,
+        low: recommendations.filter(r => r.compatibility === 'low').length
+    };
+}
+
+function getCompatibility(gamesCommonCount: number, interestsCommonCount: number): RecommendationEntry['compatibility'] {
+    if (gamesCommonCount >= 3) return 'perfect';
+    if (gamesCommonCount >= 1) return 'high';
+    if (interestsCommonCount >= 3) return 'good';
+    if (interestsCommonCount >= 1) return 'medium';
+    return 'low';
+}
+
+function setRecommendationCache(userId: number, entry: RecommendationCacheEntry) {
+    if (recommendationsCache.size > 200) {
+        const now = Date.now();
+        for (const [cacheUserId, cacheEntry] of recommendationsCache.entries()) {
+            if (cacheEntry.expiresAt <= now) {
+                recommendationsCache.delete(cacheUserId);
+            }
+        }
+    }
+
+    recommendationsCache.set(userId, entry);
+}
+
+async function getTagMaps() {
+    const now = Date.now();
+    if (tagsCache && tagsCache.expiresAt > now) {
+        return tagsCache;
+    }
+
+    const [preTagsGames, preTagsInterests] = await Promise.all([
+        PreTagsGames.findAll(),
+        PreTagsInterests.findAll()
+    ]);
+
+    tagsCache = {
+        expiresAt: now + TAG_CACHE_TTL_MS,
+        gameTagsMap: Object.fromEntries(preTagsGames.map(tag => [tag.id, tag.name])),
+        interestTagsMap: Object.fromEntries(preTagsInterests.map(tag => [tag.id, tag.name]))
+    };
+
+    return tagsCache;
+}
 
 export const healthCheck = (req: Request, res: Response) => {
     res.json({'health-check': true});
@@ -112,7 +224,6 @@ export const addOrUpdateNicknames = async (req: Request, res: Response) => {
         if (riot) whereClauses.push({ riot });
 
         if (whereClauses.length > 0) {
-            const Op = require('sequelize').Op;
             const conflicts = await Nicknames.findAll({
                 where: {
                     [Op.or]: whereClauses,
@@ -167,6 +278,9 @@ export const getUserNicknames = async (req: Request, res: Response) => {
 export const getRecommendations = async (req: Request, res: Response) => {
     try {
         const userId = Number(req.userId);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+        const cursor = Math.max(Number(req.query.cursor) || 0, 0);
+
         if (!userId || isNaN(userId)) {
             return res.status(401).json({ error: 'Usuário não autenticado ou ID inválido.' });
         }
@@ -177,14 +291,8 @@ export const getRecommendations = async (req: Request, res: Response) => {
         
         const userInterestIds = userInterests?.pre_tag_ids || [];
         const userGameIds = userGames?.pre_tag_ids || [];
+        const tagSignature = `${userGameIds.join(',')}|${userInterestIds.join(',')}`;
 
-        // Busca todos os outros usuários ativos (excluindo o próprio usuário)
-        const { Op } = require('sequelize');
-        
-        // Busca usuários já interagidos para excluir das recomendações
-        const { Like } = require('../../models/Interactions/Like');
-        const { Match } = require('../../models/Interactions/Match');
-        
         const [interactedLikes, existingMatches] = await Promise.all([
             Like.findAll({
                 where: { from_user_id: userId },
@@ -201,156 +309,199 @@ export const getRecommendations = async (req: Request, res: Response) => {
             })
         ]);
 
-        // Lista de IDs para excluir (já interagidos ou com match)
-        const excludeIds = new Set([userId]);
-        interactedLikes.forEach((like: any) => excludeIds.add(like.to_user_id));
+        const excludeIds = new Set<number>([userId]);
+        interactedLikes.forEach((like: any) => excludeIds.add(Number(like.to_user_id)));
         existingMatches.forEach((match: any) => {
-            excludeIds.add(match.user1_id);
-            excludeIds.add(match.user2_id);
+            excludeIds.add(Number(match.user1_id));
+            excludeIds.add(Number(match.user2_id));
         });
 
-        const allUsers = await User.findAll({ 
-            where: { 
-                id: { [Op.notIn]: Array.from(excludeIds) },
-                active: true,
-                ban: false
-            },
-            attributes: { exclude: ['email', 'password_hash'] }
-        });
+        const now = Date.now();
+        const cached = recommendationsCache.get(userId);
+        let payload: RecommendationPayload;
 
-        if (!allUsers.length) {
-            return res.json({ 
-                message: 'Nenhum usuário encontrado no momento. Volte mais tarde!',
-                recommendations: []
+        if (cached && cached.expiresAt > now && cached.tagSignature === tagSignature) {
+            payload = cached.payload;
+        } else {
+            const minimumCandidatesNeeded = cursor + limit + 60;
+            const candidateLimit = Math.min(
+                Math.max(minimumCandidatesNeeded, 150),
+                RECOMMENDATIONS_CANDIDATE_WINDOW
+            );
+
+            // Janela de candidatos para evitar varrer toda a base em cada request
+            const candidateUsers = await User.findAll({
+                where: {
+                    id: { [Op.notIn]: Array.from(excludeIds) },
+                    active: true,
+                    ban: false
+                },
+                attributes: { exclude: ['email', 'password_hash'] },
+                order: [['id', 'DESC']],
+                limit: candidateLimit
+            });
+
+            if (!candidateUsers.length) {
+                payload = {
+                    message: 'Nenhum usuário encontrado no momento. Volte mais tarde!',
+                    stats: {
+                        perfect: 0,
+                        high: 0,
+                        good: 0,
+                        medium: 0,
+                        low: 0
+                    },
+                    userProfile: {
+                        games: userGameIds.length,
+                        interests: userInterestIds.length
+                    },
+                    recommendations: []
+                };
+            } else {
+                const userIds = candidateUsers.map(u => Number(u.id));
+                const [allInterests, allGames, tagMaps] = await Promise.all([
+                    TagsInterests.findAll({ where: { user_id: userIds } }),
+                    TagsGames.findAll({ where: { user_id: userIds } }),
+                    getTagMaps()
+                ]);
+
+                // Mapeia user_id => { interests, games }
+                const userTagsMap: Record<number, { interests: number[]; games: number[] }> = {};
+                for (const candidateUser of candidateUsers) {
+                    userTagsMap[Number(candidateUser.id)] = { interests: [], games: [] };
+                }
+
+                for (const tag of allInterests) {
+                    const userKey = Number(tag.user_id);
+                    if (userTagsMap[userKey]) {
+                        userTagsMap[userKey].interests = tag.pre_tag_ids || [];
+                    }
+                }
+
+                for (const tag of allGames) {
+                    const userKey = Number(tag.user_id);
+                    if (userTagsMap[userKey]) {
+                        userTagsMap[userKey].games = tag.pre_tag_ids || [];
+                    }
+                }
+
+                const recommendations: RecommendationEntry[] = candidateUsers.map(otherUser => {
+                    const otherTags = userTagsMap[Number(otherUser.id)] || { interests: [], games: [] };
+                    const otherGameSet = new Set(otherTags.games);
+                    const otherInterestSet = new Set(otherTags.interests);
+
+                    const gamesCommon = userGameIds.filter(id => otherGameSet.has(id));
+                    const interestsCommon = userInterestIds.filter(id => otherInterestSet.has(id));
+                    const gameScore = gamesCommon.length * 3;
+                    const interestScore = interestsCommon.length * 2;
+                    const totalScore = gameScore + interestScore;
+
+                    return {
+                        user: otherUser,
+                        compatibility: getCompatibility(gamesCommon.length, interestsCommon.length),
+                        totalScore,
+                        gameScore,
+                        interestScore,
+                        matches: {
+                            games: {
+                                count: gamesCommon.length,
+                                common: gamesCommon.map(id => ({ id, name: tagMaps.gameTagsMap[id] })),
+                                total: otherTags.games.length
+                            },
+                            interests: {
+                                count: interestsCommon.length,
+                                common: interestsCommon.map(id => ({ id, name: tagMaps.interestTagsMap[id] })),
+                                total: otherTags.interests.length
+                            }
+                        },
+                        percentage: Math.round(
+                            ((gamesCommon.length + interestsCommon.length) /
+                                Math.max(userGameIds.length + userInterestIds.length, 1)) *
+                                100
+                        )
+                    };
+                });
+
+                // Ordena por jogos em comum, depois interesses, depois score total
+                recommendations.sort((a, b) => {
+                    if (a.matches.games.count !== b.matches.games.count) {
+                        return b.matches.games.count - a.matches.games.count;
+                    }
+
+                    if (a.matches.interests.count !== b.matches.interests.count) {
+                        return b.matches.interests.count - a.matches.interests.count;
+                    }
+
+                    return b.totalScore - a.totalScore;
+                });
+
+                payload = {
+                    message: `Encontramos ${recommendations.length} pessoas para você!`,
+                    stats: getRecommendationStats(recommendations),
+                    userProfile: {
+                        games: userGameIds.length,
+                        interests: userInterestIds.length
+                    },
+                    recommendations
+                };
+            }
+
+            setRecommendationCache(userId, {
+                expiresAt: Date.now() + RECOMMENDATIONS_CACHE_TTL_MS,
+                tagSignature,
+                payload
             });
         }
 
-        // Busca tags de todos os usuários
-        const userIds = allUsers.map(u => u.id);
-        const allInterests = await TagsInterests.findAll({ where: { user_id: userIds } });
-        const allGames = await TagsGames.findAll({ where: { user_id: userIds } });
+        const sourceRecommendations = payload.recommendations;
+        const safeCursor = Math.min(cursor, sourceRecommendations.length);
 
-        // Mapeia user_id => {interests, games}
-        const userTagsMap: Record<number, { interests: number[]; games: number[] }> = {};
-        
-        // Inicializa todos os usuários
-        allUsers.forEach(user => {
-            userTagsMap[user.id] = { interests: [], games: [] };
-        });
+        let scanCursor = safeCursor;
+        const paginatedRecommendations: RecommendationEntry[] = [];
 
-        // Preenche interesses
-        allInterests.forEach(tag => {
-            if (userTagsMap[tag.user_id]) {
-                userTagsMap[tag.user_id].interests = tag.pre_tag_ids || [];
+        while (scanCursor < sourceRecommendations.length && paginatedRecommendations.length < limit) {
+            const candidate = sourceRecommendations[scanCursor];
+            if (!excludeIds.has(Number(candidate.user.id))) {
+                paginatedRecommendations.push(candidate);
             }
-        });
+            scanCursor += 1;
+        }
 
-        // Preenche jogos
-        allGames.forEach(tag => {
-            if (userTagsMap[tag.user_id]) {
-                userTagsMap[tag.user_id].games = tag.pre_tag_ids || [];
+        let hasMore = false;
+        for (let i = scanCursor; i < sourceRecommendations.length; i += 1) {
+            if (!excludeIds.has(Number(sourceRecommendations[i].user.id))) {
+                hasMore = true;
+                break;
             }
-        });
+        }
 
-        // Busca nomes das tags para exibição
-        const [preTagsGames, preTagsInterests] = await Promise.all([
-            PreTagsGames.findAll(),
-            PreTagsInterests.findAll()
-        ]);
-
-        const gameTagsMap = Object.fromEntries(preTagsGames.map(tag => [tag.id, tag.name]));
-        const interestTagsMap = Object.fromEntries(preTagsInterests.map(tag => [tag.id, tag.name]));
-
-        // Calcula similaridade para todos os usuários
-        const recommendations = allUsers.map(otherUser => {
-            const otherTags = userTagsMap[otherUser.id];
-            
-            // Encontra tags em comum
-            const gamesCommon = userGameIds.filter(id => otherTags.games.includes(id));
-            const interestsCommon = userInterestIds.filter(id => otherTags.interests.includes(id));
-            
-            // Sistema de pontuação: jogos valem mais que interesses
-            const gameScore = gamesCommon.length * 3; // Peso maior para jogos
-            const interestScore = interestsCommon.length * 2; // Peso menor para interesses
-            const totalScore = gameScore + interestScore;
-
-            // Categoria de compatibilidade
-            let compatibility = 'low';
-            if (gamesCommon.length >= 3) compatibility = 'perfect';
-            else if (gamesCommon.length >= 1) compatibility = 'high';
-            else if (interestsCommon.length >= 3) compatibility = 'good';
-            else if (interestsCommon.length >= 1) compatibility = 'medium';
-
-            return {
-                user: otherUser,
-                compatibility,
-                totalScore,
-                gameScore,
-                interestScore,
-                matches: {
-                    games: {
-                        count: gamesCommon.length,
-                        common: gamesCommon.map(id => ({ id, name: gameTagsMap[id] })),
-                        total: otherTags.games.length
-                    },
-                    interests: {
-                        count: interestsCommon.length,
-                        common: interestsCommon.map(id => ({ id, name: interestTagsMap[id] })),
-                        total: otherTags.interests.length
-                    }
-                },
-                percentage: Math.round(((gamesCommon.length + interestsCommon.length) / Math.max(userGameIds.length + userInterestIds.length, 1)) * 100)
-            };
-        });
-
-        // Ordena por compatibilidade (jogos primeiro, depois interesses, depois score total)
-        recommendations.sort((a, b) => {
-            // Prioridade 1: Mais jogos em comum
-            if (a.matches.games.count !== b.matches.games.count) {
-                return b.matches.games.count - a.matches.games.count;
+        let filteredTotal = 0;
+        const filteredStatsCounter: RecommendationEntry[] = [];
+        for (const rec of sourceRecommendations) {
+            if (excludeIds.has(Number(rec.user.id))) {
+                continue;
             }
-            // Prioridade 2: Mais interesses em comum
-            if (a.matches.interests.count !== b.matches.interests.count) {
-                return b.matches.interests.count - a.matches.interests.count;
+            filteredTotal += 1;
+            filteredStatsCounter.push(rec);
+        }
+
+        const stats = getRecommendationStats(filteredStatsCounter);
+
+        return res.json({
+            message: `Encontramos ${filteredTotal} pessoas para você!`,
+            stats,
+            userProfile: payload.userProfile,
+            recommendations: paginatedRecommendations,
+            pagination: {
+                cursor: safeCursor,
+                nextCursor: hasMore ? scanCursor : null,
+                hasMore,
+                total: filteredTotal
             }
-            // Prioridade 3: Score total
-            return b.totalScore - a.totalScore;
-        });
-
-        // Separa por categorias
-        const perfectMatches = recommendations.filter(r => r.compatibility === 'perfect');
-        const highMatches = recommendations.filter(r => r.compatibility === 'high');
-        const goodMatches = recommendations.filter(r => r.compatibility === 'good');
-        const mediumMatches = recommendations.filter(r => r.compatibility === 'medium');
-        const lowMatches = recommendations.filter(r => r.compatibility === 'low');
-
-        // Limita resultados (máx 20 pessoas)
-        const finalRecommendations = [
-            ...perfectMatches.slice(0, 7),
-            ...highMatches.slice(0, 5),
-            ...goodMatches.slice(0, 4),
-            ...mediumMatches.slice(0, 2),
-            ...lowMatches.slice(0, 2)
-        ].slice(0, 20); // Garante no máximo 20
-
-        res.json({
-            message: `Encontramos ${finalRecommendations.length} pessoas para você!`,
-            stats: {
-                perfect: perfectMatches.length,
-                high: highMatches.length,
-                good: goodMatches.length,
-                medium: mediumMatches.length,
-                low: lowMatches.length
-            },
-            userProfile: {
-                games: userGameIds.length,
-                interests: userInterestIds.length
-            },
-            recommendations: finalRecommendations
         });
     } catch (err) {
         console.error('Recommendation error:', err);
-        res.status(500).json({ error: 'Erro ao buscar recomendações.' });
+        return res.status(500).json({ error: 'Erro ao buscar recomendações.' });
     }
 };
 
