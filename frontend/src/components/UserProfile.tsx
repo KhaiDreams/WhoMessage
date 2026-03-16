@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { userAPI, tagsAPI, reportsAPI, interactionsAPI } from '../lib/api';
+import { userAPI, reportsAPI, interactionsAPI } from '../lib/api';
 import { User, Tag } from '../lib/api';
 import { toast } from 'react-toastify';
 import { X, HeartCrack, AlertTriangle, Gamepad2, Heart, Cake, Sparkles, AtSign, Star } from 'lucide-react';
@@ -252,45 +252,15 @@ export default function UserProfile({ userId, isOwnProfile = false, matchId, onC
       setLoading(true);
       
       if (isOwnProfile) {
-        // Se é o próprio perfil, usar a rota /api/user/me
-        const [userResponse, gamesResponse, interestsResponse, allGames, allInterests] = await Promise.all([
-          userAPI.getProfile(),
-          tagsAPI.getUserGames(),
-          tagsAPI.getUserInterests(),
-          tagsAPI.getGames(),
-          tagsAPI.getInterests()
-        ]);
-
-        setUser(userResponse.user);
-
-        // Processar jogos
-        if (gamesResponse && typeof gamesResponse === 'object' && 'pre_tag_ids' in gamesResponse && Array.isArray(gamesResponse.pre_tag_ids)) {
-          const userGameIds = gamesResponse.pre_tag_ids.map(id => Number(id));
-          const userGameObjects = allGames.filter(game => userGameIds.includes(game.id));
-          setUserGames(userGameObjects);
-        } else {
-          setUserGames([]);
-        }
-
-        // Processar interesses
-        if (interestsResponse && typeof interestsResponse === 'object' && 'pre_tag_ids' in interestsResponse && Array.isArray(interestsResponse.pre_tag_ids)) {
-          const userInterestIds = interestsResponse.pre_tag_ids.map(id => Number(id));
-          const userInterestObjects = allInterests.filter(interest => userInterestIds.includes(interest.id));
-          setUserInterests(userInterestObjects);
-        } else {
-          setUserInterests([]);
-        }
+        const profile = await userAPI.getMyProfileFull();
+        setUser(profile.user);
+        setUserGames(profile.games || []);
+        setUserInterests(profile.interests || []);
       } else {
-        // Se é perfil de outro usuário, usar as novas rotas
-        const [userResponse, gamesResponse, interestsResponse] = await Promise.all([
-          userAPI.getUserById(userId),
-          tagsAPI.getUserGamesByUserId(userId),
-          tagsAPI.getUserInterestsByUserId(userId)
-        ]);
-
-        setUser(userResponse.user);
-        setUserGames(gamesResponse.games || []);
-        setUserInterests(interestsResponse.interests || []);
+        const profile = await userAPI.getUserProfileFull(userId);
+        setUser(profile.user);
+        setUserGames(profile.games || []);
+        setUserInterests(profile.interests || []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados do usuário:', error);

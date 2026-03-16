@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import api from "@/lib/api";
+import { authAPI } from "@/lib/api";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -14,9 +14,6 @@ export default function Register() {
     bio: "",
     age: "",
     nickname: "", // Nickname atual/ativo
-    active: true,
-    is_admin: false,
-    ban: false,
   });
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,11 +24,32 @@ export default function Register() {
   const [passwordStrength, setPasswordStrength] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [isTypingPassword, setIsTypingPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+
+    if (name === "age") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 2);
+      setFormData((prevData) => ({
+        ...prevData,
+        age: numericValue,
+      }));
+
+      if (!numericValue) {
+        setFieldErrors((prev) => ({ ...prev, age: "Idade é obrigatória." }));
+      } else {
+        const parsedAge = Number(numericValue);
+        if (parsedAge < 14 || parsedAge > 99) {
+          setFieldErrors((prev) => ({ ...prev, age: "A idade deve estar entre 14 e 99 anos." }));
+        }
+      }
+      return;
+    }
+
     if (name === "bio") {
       if (value.length > 300) {
         setBioError("A descrição não pode ter mais que 300 caracteres.");
@@ -91,27 +109,45 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (bioError || passwordError || confirmPasswordError || !confirmPassword) return;
+
+    const parsedAge = parseInt(formData.age);
+    if (!parsedAge || parsedAge < 14 || parsedAge > 99) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        age: "A idade deve estar entre 14 e 99 anos."
+      }));
+      return;
+    }
+
     try {
+      setFieldErrors({});
       // Se o usuário não definiu um nickname, usar o username como padrão
       const nicknameToUse = formData.nickname.trim() || formData.username;
 
-      const res = await api.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      const res = await authAPI.register({
         email: formData.email,
         password: formData.password,
         username: formData.username,
         bio: formData.bio,
-        age: parseInt(formData.age),
+        age: parsedAge,
         nicknames: [nicknameToUse],
-        active: formData.active,
-        is_admin: formData.is_admin,
-        ban: formData.ban,
       });
       if (res.token) {
         localStorage.setItem('token', res.token);
       }
       // Após criar conta, deve ir para games primeiro, não interests
       router.push('/choose-games');
-    } catch (error) {
+    } catch (error: any) {
+      const details = error?.details;
+      if (Array.isArray(details)) {
+        const nextFieldErrors: Record<string, string> = {};
+        for (const detail of details) {
+          if (detail?.field && detail?.message) {
+            nextFieldErrors[detail.field] = detail.message;
+          }
+        }
+        setFieldErrors((prev) => ({ ...prev, ...nextFieldErrors }));
+      }
     }
   };
 
@@ -133,18 +169,20 @@ export default function Register() {
             placeholder="Nome de usuário (único)"
             value={formData.username}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
+            className={`px-4 py-3 rounded-lg bg-input-bg border ${fieldErrors.username ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200`}
             required
           />
+          {fieldErrors.username && <span className="text-xs text-red-500 -mt-3">{fieldErrors.username}</span>}
           <input
             type="email"
             name="email"
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
+            className={`px-4 py-3 rounded-lg bg-input-bg border ${fieldErrors.email ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200`}
             required
           />
+          {fieldErrors.email && <span className="text-xs text-red-500 -mt-3">{fieldErrors.email}</span>}
           <div className="relative w-full">
             <input
               type={showPassword ? "text" : "password"}
@@ -226,14 +264,19 @@ export default function Register() {
             </div>
           )}
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             name="age"
             placeholder="Idade"
             value={formData.age}
             onChange={handleChange}
-            className="px-4 py-3 rounded-lg bg-input-bg border border-input-border text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200"
+            className={`px-4 py-3 rounded-lg bg-input-bg border ${fieldErrors.age ? 'border-red-500' : 'border-input-border'} text-input-text placeholder-input-placeholder focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-input-focus transition-all duration-200`}
             required
           />
+          {fieldErrors.age && (
+            <span className="text-xs text-red-500 -mt-3">{fieldErrors.age}</span>
+          )}
           
           {/* Campo de Nickname */}
           <input
