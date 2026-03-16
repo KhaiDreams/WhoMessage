@@ -15,6 +15,7 @@ interface HeaderProps {
 export default function Header({ onLogoClick, onNavigateToMessages }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [likingBack, setLikingBack] = useState<number | null>(null);
+  const [resolvedLikeNotifications, setResolvedLikeNotifications] = useState<Set<number>>(new Set());
   const [viewingProfileUserId, setViewingProfileUserId] = useState<number | null>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, loading } = useNotifications();
@@ -42,9 +43,21 @@ export default function Header({ onLogoClick, onNavigateToMessages }: HeaderProp
 
   const handleLikeBack = async (e: React.MouseEvent, fromUserId: number, notifId: number) => {
     e.stopPropagation();
+
+    if (resolvedLikeNotifications.has(notifId)) {
+      return;
+    }
+
     setLikingBack(notifId);
     try {
       const result: any = await interactionsAPI.likeUser(fromUserId, 'like');
+      setResolvedLikeNotifications(prev => {
+        const next = new Set(prev);
+        next.add(notifId);
+        return next;
+      });
+      await markAsRead(notifId);
+
       if (result.match) {
         toast.success('É um match! 🎉 Agora vocês podem conversar.');
         onNavigateToMessages?.();
@@ -52,7 +65,6 @@ export default function Header({ onLogoClick, onNavigateToMessages }: HeaderProp
       } else {
         toast.success('Like enviado! 💖');
       }
-      markAsRead(notifId);
     } catch {
       // erro já tratado por apiFetch
     } finally {
@@ -146,7 +158,11 @@ export default function Header({ onLogoClick, onNavigateToMessages }: HeaderProp
                               })}
                             </p>
                             {/* Botão "Curtir de volta" para likes recebidos */}
-                            {notif.type === 'like_received' && notif.from_user_id && (
+                            {notif.type === 'like_received' &&
+                              notif.from_user_id &&
+                              !notif.read &&
+                              notif.canLikeBack !== false &&
+                              !resolvedLikeNotifications.has(notif.id) && (
                               <button
                                 onClick={(e) => handleLikeBack(e, notif.from_user_id!, notif.id)}
                                 disabled={likingBack === notif.id}

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as ApiController from '../controllers/Users/userController';
 import { avatarUpload, uploadAvatar } from '../controllers/Users/uploadController';
 import { AuthMiddleware } from '../middlewares/auth';
-import { authLimiter, passwordChangeLimiter } from '../middlewares/rateLimiter';
+import { loginLimiter, passwordChangeLimiter, registerLimiter } from '../middlewares/rateLimiter';
 import { validateRequest, validateParams, validateQuery } from '../middlewares/validation';
 import { requireAdmin, requireSelfOrAdmin } from '../middlewares/adminAuth';
 import { 
@@ -17,11 +17,12 @@ import { userIdSchema, adminUserBanSchema, adminSearchQuerySchema } from '../val
 const router = Router();
 
 // Register - Login (com rate limiting e validação)
-router.post('/auth/register', authLimiter, validateRequest(registerSchema), ApiController.registerUser);
-router.post('/auth/login', authLimiter, validateRequest(loginSchema), ApiController.loginUser);
+router.post('/auth/register', registerLimiter, validateRequest(registerSchema), ApiController.registerUser);
+router.post('/auth/login', loginLimiter, validateRequest(loginSchema), ApiController.loginUser);
 
 // User management (requires authentication via token)
 router.get('/users/:id', AuthMiddleware, validateParams(userIdSchema), ApiController.listUserbyId);
+router.get('/users/:id/profile', AuthMiddleware, validateParams(userIdSchema), ApiController.listUserProfileFull);
 router.put('/users/:id', AuthMiddleware, requireSelfOrAdmin, validateParams(userIdSchema), validateRequest(updateUserSchema), ApiController.updateUser);
 router.post('/users/upload-avatar', AuthMiddleware, avatarUpload.single('avatar'), uploadAvatar);
 router.post('/users/nicknames', AuthMiddleware, validateRequest(addNicknamesSchema), ApiController.addNicknames);

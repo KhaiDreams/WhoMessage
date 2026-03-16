@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import api from "@/lib/api";
+import useAuth from "@/hooks/useAuth";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/", "/_error"];
 
@@ -14,49 +14,91 @@ const Loader = () => (
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+  const currentPath = pathname || "";
   const [isAllowed, setIsAllowed] = useState<null | boolean>(null);
+  const isPublicRoute = PUBLIC_ROUTES.includes(currentPath);
+  const {
+    isLoading,
+    isAuthenticated,
+    user,
+    hasProfile,
+    hasGames,
+    hasInterests,
+    clearSession,
+  } = useAuth();
 
-  // Primeiro useEffect só para marcar que o componente está montado no cliente
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (PUBLIC_ROUTES.includes(pathname)) {
-      setIsAllowed(true);
+    if (isPublicRoute) {
+      setIsAllowed(null);
       return;
     }
-    const check = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.replace("/login");
+
+    if (isLoading) {
+      setIsAllowed(null);
+      return;
+    }
+
+    if (!isAuthenticated || !user) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (token) {
+        // Aguarda hidratação da sessão compartilhada para evitar redirect indevido.
+        setIsAllowed(null);
+        return;
+      }
+      router.replace("/login");
+      setIsAllowed(false);
+      return;
+    }
+
+    if (user.ban || user.active === false) {
+      clearSession();
+      router.replace("/login");
+      setIsAllowed(false);
+      return;
+    }
+
+    if (!hasProfile && currentPath !== "/register") {
+      router.replace("/register");
+      setIsAllowed(false);
+      return;
+    }
+
+    // Onboarding sequencial para evitar loop entre choose-games e choose-interests.
+    if (!hasGames) {
+      if (currentPath !== "/choose-games") {
+        router.replace("/choose-games");
         setIsAllowed(false);
         return;
       }
-      try {
-        const me = await api.get("/api/user/me");
-        if (!me || (me as any).ban || (me as any).active === false) {
-          localStorage.removeItem("token");
-          router.replace("/login");
-          setIsAllowed(false);
-        } else {
-          setIsAllowed(true);
-        }
-      } catch {
-        localStorage.removeItem("token");
-        router.replace("/login");
-        setIsAllowed(false);
-      }
-    };
-    check();
-  }, [mounted, pathname, router]);
+      setIsAllowed(true);
+      return;
+    }
 
-  // Retorna null enquanto não está montado: garante que server e client renderizam
-  // exatamente o mesmo HTML inicial (nada), eliminando o hydration mismatch.
-  if (!mounted) return null;
+    if (!hasInterests) {
+      if (currentPath !== "/choose-interests") {
+        router.replace("/choose-interests");
+        setIsAllowed(false);
+        return;
+      }
+      setIsAllowed(true);
+      return;
+    }
+
+    setIsAllowed(true);
+  }, [
+    isPublicRoute,
+    currentPath,
+    isLoading,
+    isAuthenticated,
+    user,
+    hasProfile,
+    hasGames,
+    hasInterests,
+    clearSession,
+    router,
+  ]);
+
+  if (isPublicRoute) return <>{children}</>;
   if (isAllowed === null) return <Loader />;
   if (!isAllowed) return null;
   return <>{children}</>;

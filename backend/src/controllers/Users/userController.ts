@@ -2,8 +2,12 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../../models/Users/User';
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, col, fn, where } from 'sequelize';
 import sequelize from '../../database/db';
+import { TagsGames } from '../../models/Tags/TagsGames';
+import { TagsInterests } from '../../models/Tags/TagsInterests';
+import { PreTagsGames } from '../../models/Tags/PreTagsGames';
+import { PreTagsInterests } from '../../models/Tags/PreTagsInterests';
 
 interface UserRequestBody {
     username: string;
@@ -13,14 +17,17 @@ interface UserRequestBody {
     pfp?: string;
     bio?: string;
     nicknames?: string[];
-    active?: boolean;
-    is_admin?: boolean;
-    ban?: boolean;
+}
+
+const MIN_ADMIN_SEARCH_LENGTH = 2;
+
+function escapeLikePattern(value: string) {
+    return value.replace(/[\\%_]/g, '\\$&');
 }
 
 export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: Response) => {
     try {
-        const { username, email, password, age, pfp, bio, nicknames, active, is_admin, ban } = req.body;
+        const { username, email, password, age, pfp, bio, nicknames } = req.body;
 
         // Verificar se usuário já existe (queries em paralelo)
         const [userExists, usernameExists] = await Promise.all([
@@ -46,9 +53,9 @@ export const registerUser = async (req: Request<{}, {}, UserRequestBody>, res: R
             pfp,
             bio,
             nicknames: Array.isArray(nicknames) ? nicknames : (nicknames ? [nicknames] : [username]),
-            active: active ?? true,
-            is_admin: is_admin ?? false,
-            ban: ban ?? false
+            active: true,
+            is_admin: false,
+            ban: false
         });
 
         const secret = process.env.SECRET;
@@ -146,19 +153,74 @@ export const listUserbyId = async (req: Request, res: Response) => {
     }
 };
 
+export const listUserProfileFull = async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        const [user, userGames, userInterests] = await Promise.all([
+            User.findByPk(id, {
+                attributes: { exclude: ['email', 'password_hash'] }
+            }),
+            TagsGames.findOne({ where: { user_id: id }, attributes: ['pre_tag_ids'] }),
+            TagsInterests.findOne({ where: { user_id: id }, attributes: ['pre_tag_ids'] })
+        ]);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuário não encontrado' });
+        }
+
+        const gameIds = userGames?.pre_tag_ids ?? [];
+        const interestIds = userInterests?.pre_tag_ids ?? [];
+
+        const [games, interests] = await Promise.all([
+            gameIds.length > 0 ? PreTagsGames.findAll({ where: { id: gameIds } }) : Promise.resolve([]),
+            interestIds.length > 0 ? PreTagsInterests.findAll({ where: { id: interestIds } }) : Promise.resolve([])
+        ]);
+
+        return res.status(200).json({
+            user,
+            games,
+            interests,
+            tagIds: {
+                gameIds,
+                interestIds
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            error: 'Erro ao buscar perfil do usuário',
+        });
+    }
+};
+
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
-        const paramId = req.params.id;
-        // userId pode ser string ou number, paramId é string
-        if (String(userId) !== String(paramId)) {
+        const paramId = Number(req.params.id);
+
+        const canEdit = String(userId) === String(paramId) || Boolean(req.currentUser?.is_admin);
+        if (!canEdit) {
             return res.status(403).json({ message: 'Você só pode atualizar o seu próprio perfil.' });
         }
+
         const { username, age, pfp, bio, nicknames } = req.body;
 
-        const user = await User.findByPk(userId);
+        const user = await User.findByPk(paramId);
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        if (username && username !== user.username) {
+            const existingUsername = await User.findOne({
+                where: {
+                    username,
+                    id: { [Op.ne]: user.id }
+                },
+                attributes: ['id']
+            });
+
+            if (existingUsername) {
+                return res.status(409).json({ message: 'Username já está em uso.' });
+            }
         }
 
         // Atualiza apenas os campos permitidos (não sensíveis)
@@ -258,7 +320,10 @@ export const addNicknames = async (req: Request, res: Response) => {
 export const listUsersForAdmin = async (req: Request, res: Response) => {
     try {
         const { status, search, page = 1, limit = 20 } = req.query;
-        const offset = (Number(page) - 1) * Number(limit);
+        const normalizedPage = Math.min(Math.max(Number(page) || 1, 1), 1000);
+        const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+        const offset = (normalizedPage - 1) * normalizedLimit;
+        const normalizedSearch = typeof search === 'string' ? search.trim().toLowerCase() : '';
 
         const whereClause: any = {};
         
@@ -275,10 +340,13 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
         }
 
         // Busca por username ou email
-        if (search) {
+        if (normalizedSearch.length >= MIN_ADMIN_SEARCH_LENGTH) {
+            const escapedSearch = escapeLikePattern(normalizedSearch);
+            const searchPattern = `${escapedSearch}%`;
+
             whereClause[Op.or] = [
-                { username: { [Op.iLike]: `%${search}%` } },
-                { email: { [Op.iLike]: `%${search}%` } }
+                where(fn('LOWER', col('username')), { [Op.like]: searchPattern }),
+                where(fn('LOWER', col('email')), { [Op.like]: searchPattern })
             ];
         }
 
@@ -288,7 +356,7 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
                 where: whereClause,
                 attributes: { exclude: ['password_hash'] },
                 order: [['createdAt', 'DESC']],
-                limit: Number(limit),
+                limit: normalizedLimit,
                 offset
             }),
             sequelize.query<{ total: number; banned: number; active: number; inactive: number; admins: number }>(
@@ -306,10 +374,10 @@ export const listUsersForAdmin = async (req: Request, res: Response) => {
         res.json({
             users: users.rows,
             pagination: {
-                current_page: Number(page),
-                total_pages: Math.ceil(users.count / Number(limit)),
+                current_page: normalizedPage,
+                total_pages: Math.ceil(users.count / normalizedLimit),
                 total_users: users.count,
-                per_page: Number(limit)
+                per_page: normalizedLimit
             },
             stats: statsRow
         });

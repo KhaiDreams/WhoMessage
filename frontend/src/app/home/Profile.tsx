@@ -659,39 +659,11 @@ export default function Profile() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      const [userResponse, gamesResponse, interestsResponse, allGames, allInterests] = await Promise.all([
-        userAPI.getProfile(),
-        tagsAPI.getUserGames(),
-        tagsAPI.getUserInterests(),
-        tagsAPI.getGames(),
-        tagsAPI.getInterests()
-      ]);
 
-      // A API /api/user/me retorna { user: {...} }
-      setUser(userResponse.user);
-
-      if (gamesResponse && typeof gamesResponse === 'object' && 'pre_tag_ids' in gamesResponse && Array.isArray(gamesResponse.pre_tag_ids)) {
-        const userGameIds = gamesResponse.pre_tag_ids.map(id => Number(id)); // Converter strings para números
-        const userGameObjects = allGames.filter(game => {
-          const match = userGameIds.includes(game.id);
-          return match;
-        });
-        setUserGames(userGameObjects);
-      } else {
-        setUserGames([]);
-      }
-
-      if (interestsResponse && typeof interestsResponse === 'object' && 'pre_tag_ids' in interestsResponse && Array.isArray(interestsResponse.pre_tag_ids)) {
-        const userInterestIds = interestsResponse.pre_tag_ids.map(id => Number(id)); // Converter strings para números
-        const userInterestObjects = allInterests.filter(interest => {
-          const match = userInterestIds.includes(interest.id);
-          return match;
-        });
-        setUserInterests(userInterestObjects);
-      } else {
-        setUserInterests([]);
-      }
+      const fullProfile = await userAPI.getMyProfileFull();
+      setUser(fullProfile.user);
+      setUserGames(fullProfile.games || []);
+      setUserInterests(fullProfile.interests || []);
     } catch (error) {
       console.error('Erro ao carregar dados do perfil:', error);
       toast.error('Erro ao carregar perfil');

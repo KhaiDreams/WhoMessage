@@ -33,6 +33,7 @@ export const User = sequelize.define<UserInstance>('User', {
     username: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true,
     },
     pfp: {
         type: DataTypes.TEXT,

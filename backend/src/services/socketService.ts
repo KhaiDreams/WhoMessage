@@ -1,10 +1,12 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { User } from '../models/Users/User';
 import { Conversation } from '../models/Chat/Conversation';
 import { Message } from '../models/Chat/Message';
+import sequelize from '../database/db';
+import { getAllowedOrigins } from '../config/cors';
 
 interface AuthenticatedSocket extends Socket {
   userId?: number;
@@ -25,7 +27,7 @@ class SocketService {
   constructor(server: HTTPServer) {
     this.io = new SocketIOServer(server, {
       cors: {
-        origin: ['http://localhost:3000', 'https://whomessage.vercel.app', 'https://www.whomessage.chat'],
+        origin: getAllowedOrigins(),
         methods: ['GET', 'POST'],
         credentials: true
       }
@@ -54,6 +56,10 @@ class SocketService {
         
         if (!user) {
           return next(new Error('User not found'));
+        }
+
+        if (user.ban || user.active === false) {
+          return next(new Error('User not allowed'));
         }
 
         socket.userId = decoded.id;
@@ -177,21 +183,51 @@ class SocketService {
             model: User,
             as: 'user2',
             attributes: ['id', 'username', 'pfp']
-          },
-          {
-            model: Message,
-            as: 'messages',
-            limit: 1,
-            order: [['createdAt', 'DESC']],
-            attributes: ['id', 'content', 'messageType', 'senderId', 'createdAt']
           }
         ],
         order: [['updatedAt', 'DESC']]
       });
 
+      if (!conversations.length) {
+        return [];
+      }
+
+      const conversationIds = conversations.map(conv => conv.id);
+
+      const lastMessages = await sequelize.query<{
+        id: number;
+        conversationId: number;
+        content: string;
+        messageType: 'text' | 'image' | 'file';
+        senderId: number;
+        createdAt: Date;
+      }>(
+        `SELECT DISTINCT ON (conversation_id)
+            id,
+            conversation_id AS "conversationId",
+            content,
+            message_type AS "messageType",
+            sender_id AS "senderId",
+            created_at AS "createdAt"
+         FROM messages
+         WHERE conversation_id IN (:conversationIds)
+         ORDER BY conversation_id, created_at DESC`,
+        {
+          replacements: { conversationIds },
+          type: QueryTypes.SELECT
+        }
+      );
+
+      const lastMessageByConversationId = new Map<number, (typeof lastMessages)[number]>();
+      lastMessages.forEach(msg => {
+        if (!lastMessageByConversationId.has(msg.conversationId)) {
+          lastMessageByConversationId.set(msg.conversationId, msg);
+        }
+      });
+
       return conversations.map(conv => {
         const otherUser = conv.user1Id === userId ? conv.user2 : conv.user1;
-        const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null;
+        const lastMessage = lastMessageByConversationId.get(conv.id) || null;
 
         if (!otherUser) {
           console.error('Other user not found for conversation:', conv.id);
@@ -253,6 +289,9 @@ class SocketService {
         messageType: data.messageType || 'text',
         isRead: false
       });
+
+      // Mantém ordenação correta de conversas por atividade recente
+      await conversation.update({ updatedAt: new Date() });
 
       // Usa socket.user (já em memória) para dados do remetente — sem re-fetch
       this.io.to(`conversation_${data.conversationId}`).emit('new_message', {

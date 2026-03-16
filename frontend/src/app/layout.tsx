@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 import ProtectedLayout from "./protected-layout";
+import { AuthSessionProvider } from "@/contexts/AuthSessionContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -70,20 +71,26 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ProtectedLayout>
-          {children}
-        </ProtectedLayout>
+        <AuthSessionProvider>
+          <ProtectedLayout>
+            {children}
+          </ProtectedLayout>
+        </AuthSessionProvider>
         <ToastContainer
           position="top-right"
-          autoClose={5000}
+          autoClose={4000}
+          limit={3}
           hideProgressBar={false}
-          newestOnTop={false}
+          newestOnTop
           closeOnClick
           rtl={false}
           pauseOnFocusLoss
           draggable
           pauseOnHover
-          theme="light"
+          theme="dark"
+          className="wm-toast-container"
+          toastClassName="wm-toast"
+          progressClassName="wm-toast-progress"
         />
       </body>
     </html>

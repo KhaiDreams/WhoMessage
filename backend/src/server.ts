@@ -1,7 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import { createServer } from 'http';
 import https from 'https';
 import helmet from 'helmet';
+import multer from 'multer';
 import './models/associations'; // Importar associações ANTES dos routes
 import apiRouters from './routes/user';
 import tagsRouters from './routes/tags';
@@ -13,6 +14,7 @@ import chatRoutes from './routes/chat';
 import cors from 'cors';
 import { SocketService } from './services/socketService';
 import { generalLimiter } from './middlewares/rateLimiter';
+import { getAllowedOrigins } from './config/cors';
 
 const server = express();
 const httpServer = createServer(server);
@@ -36,11 +38,7 @@ server.use(helmet({
 
 server.use(express.json({ limit: '1mb' }));
 server.use(express.urlencoded({ limit: '1mb', extended: true }));
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://whomessage.vercel.app',
-  'https://www.whomessage.chat'
-];
+const allowedOrigins = getAllowedOrigins();
 
 server.use(cors({
   origin: function (origin, callback) {
@@ -71,10 +69,23 @@ server.get('/health', (_req: Request, res: Response) => {
 server.use('/', apiRouters);
 server.use('/api', tagsRouters);
 server.use('/api/feedback', feedbackRoutes);
-server.use('/api/user/me', meRoutes);
+server.use('/api/user', meRoutes);
 server.use('/api', interactionsRoutes);
 server.use('/api', reportsRoutes);
 server.use('/api/chat', chatRoutes);
+
+server.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+    if (!err) return next();
+
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ error: 'IMAGE_TOO_LARGE', message: 'Arquivo muito grande.' });
+        }
+        return res.status(400).json({ error: 'UPLOAD_ERROR', message: err.message });
+    }
+
+    return res.status(400).json({ error: 'BAD_REQUEST', message: err.message || 'Requisição inválida.' });
+});
 
 const PORT = process.env.PORT;
 httpServer.listen(PORT, () => {

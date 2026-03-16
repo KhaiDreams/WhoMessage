@@ -225,9 +225,6 @@ export const useSocket = () => {
     if (socket) {
       currentConversationId.current = conversationId;
       socket.emit('join_conversation', conversationId);
-      
-      // Força uma atualização das conversas para garantir dados atualizados
-      socket.emit('get_conversations');
     }
   };
 

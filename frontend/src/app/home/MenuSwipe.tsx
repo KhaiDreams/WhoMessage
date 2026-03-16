@@ -6,10 +6,9 @@ import { toast } from "react-toastify";
 import { Gamepad2, Sparkles, HeartHandshake, X, Flag, Heart, Star, BarChart2, Layers } from 'lucide-react';
 
 export default function MenuSwipe() {
+  const CURRENT_INDEX = 0;
   const [autoLoading, setAutoLoading] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [triedAuto, setTriedAuto] = useState(false);
-  const [index, setIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -27,17 +26,48 @@ export default function MenuSwipe() {
   const gestureRef = useRef<'none' | 'horizontal' | 'vertical'>('none');
   const lastTouchYRef = useRef(0);
   
-  const { recommendations, loading, error, handleUserAction, fetchRecommendations } = useRecommendations();
+  const { recommendations, loading, error, hasMore, handleUserAction, fetchRecommendations } = useRecommendations();
+  const recommendation = recommendations[CURRENT_INDEX];
+
+  const hideSwipeIndicatorsImmediately = () => {
+    const likeEl = likeIndicatorRef.current;
+    if (likeEl) {
+      likeEl.style.transition = 'none';
+      likeEl.style.opacity = '0';
+      likeEl.style.transform = 'rotate(12deg) scale(0.9)';
+    }
+
+    const nopeEl = nopeIndicatorRef.current;
+    if (nopeEl) {
+      nopeEl.style.transition = 'none';
+      nopeEl.style.opacity = '0';
+      nopeEl.style.transform = 'rotate(-12deg) scale(0.9)';
+    }
+
+    requestAnimationFrame(() => {
+      if (likeIndicatorRef.current) {
+        likeIndicatorRef.current.style.transition = 'opacity 0.1s, transform 0.1s';
+      }
+      if (nopeIndicatorRef.current) {
+        nopeIndicatorRef.current.style.transition = 'opacity 0.1s, transform 0.1s';
+      }
+    });
+  };
 
   // Reseta posição do card quando muda de perfil
   useEffect(() => {
+    hideSwipeIndicatorsImmediately();
     dragXRef.current = 0;
+    const el = cardRef.current;
+    if (!el) return;
+
+    el.style.transition = 'none';
     applyTransform(0);
-  }, [index]);
 
-
-  // Definir recommendation após hooks
-  const recommendation = recommendations[index];
+    requestAnimationFrame(() => {
+      if (cardRef.current) cardRef.current.style.transition = '';
+    });
+  }, [recommendation?.user?.id, recommendations.length]);
 
   let content: React.ReactNode = null;
   if (loading) {
@@ -55,7 +85,7 @@ export default function MenuSwipe() {
         <div className="text-center">
           <p className="text-red-500 mb-4">Erro ao carregar recomendações</p>
           <button
-            onClick={() => fetchRecommendations()}
+            onClick={() => fetchRecommendations(20, true)}
             className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80 transition-colors"
           >
             Tentar novamente
@@ -63,7 +93,7 @@ export default function MenuSwipe() {
         </div>
       </div>
     );
-  } else if (finished || (!recommendation || index >= recommendations.length)) {
+  } else if (finished || !recommendation) {
     content = (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -74,9 +104,7 @@ export default function MenuSwipe() {
             onClick={() => {
               setAutoLoading(true);
               setFinished(false);
-              setTriedAuto(false);
-              fetchRecommendations().then(() => {
-                setIndex(0);
+              fetchRecommendations(20, true).then(() => {
                 setAutoLoading(false);
               });
             }}
@@ -90,29 +118,28 @@ export default function MenuSwipe() {
   }
 
 
-  // Efeito para buscar mais recomendações automaticamente ao chegar no fim (só uma vez)
+  // Efeito para buscar mais recomendações automaticamente quando o buffer está baixo
   useEffect(() => {
-    if (finished) return;
-    if ((recommendations.length === 0 || index >= recommendations.length) && !loading && !error && !autoLoading && !triedAuto) {
+    if (finished || loading || error || autoLoading) return;
+
+    const remaining = recommendations.length - CURRENT_INDEX;
+    if (remaining <= 3 && hasMore) {
       setAutoLoading(true);
-      setTriedAuto(true);
-      fetchRecommendations().then(() => {
-        setIndex(0);
+      fetchRecommendations(20, false).finally(() => {
         setAutoLoading(false);
-        // Se continuar vazio, marca como finalizado
-        setTimeout(() => {
-          if (recommendations.length === 0) setFinished(true);
-        }, 100);
       });
-    } else if ((recommendations.length === 0 || index >= recommendations.length) && triedAuto) {
+      return;
+    }
+
+    if (recommendations.length === 0 && !hasMore) {
       setFinished(true);
     }
-  }, [index, recommendations.length, loading, error, fetchRecommendations, autoLoading, finished, triedAuto]);
-  // Resetar finished e triedAuto se novas recomendações chegarem
+  }, [recommendations.length, loading, error, fetchRecommendations, autoLoading, finished, hasMore]);
+
+  // Resetar finished se novas recomendações chegarem
   useEffect(() => {
     if (recommendations.length > 0 && finished) {
       setFinished(false);
-      setTriedAuto(false);
     }
   }, [recommendations.length, finished]);
 
@@ -141,30 +168,34 @@ export default function MenuSwipe() {
     setTimeout(() => { if (cardRef.current) cardRef.current.style.transition = ''; }, 250);
   };
 
-  const handleSwipe = async (direction: "left" | "right") => {
+  const handleSwipe = (direction: "left" | "right") => {
     if (isAnimatingRef.current || !recommendation) return;
+    const swipedUserId = recommendation.user.id;
+    const action = direction === "right" ? "like" : "pass";
+
     isAnimatingRef.current = true;
     setIsAnimating(true);
 
     const el = cardRef.current;
     if (el) {
-      el.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      el.style.transition = 'transform 0.16s ease-out, opacity 0.16s ease-out';
       applyTransform(direction === 'right' ? 1000 : -1000);
-    }
-
-    try {
-      await handleUserAction(recommendation.user.id, direction === "right" ? "like" : "pass");
-    } catch (err) {
-      console.error('Erro ao processar ação:', err);
     }
 
     setTimeout(() => {
       if (cardRef.current) cardRef.current.style.transition = '';
       dragXRef.current = 0;
-      setIndex(prev => prev + 1);
+      applyTransform(0);
+      hideSwipeIndicatorsImmediately();
+
+      // Só troca para o próximo perfil após finalizar a saída visual do card.
+      void handleUserAction(swipedUserId, action).catch((err) => {
+        console.error('Erro ao processar ação:', err);
+      });
+
       setIsAnimating(false);
       isAnimatingRef.current = false;
-    }, 300);
+    }, 160);
   };
 
   // Mouse events

@@ -39,10 +39,13 @@ export const adminSearchQuerySchema = Joi.object({
       'any.only': 'Status deve ser: banned, active, inactive ou admin'
     }),
   search: Joi.string()
+    .trim()
+    .min(2)
     .max(100)
     .allow('')
     .optional()
     .messages({
+      'string.min': 'Busca deve ter pelo menos 2 caracteres',
       'string.max': 'Busca deve ter no máximo 100 caracteres'
     }),
   page: Joi.number()
@@ -150,6 +153,15 @@ export const recommendationsQuerySchema = Joi.object({
     .messages({
       'number.min': 'Limite deve ser pelo menos 1',
       'number.max': 'Limite não pode ser maior que 50'
+    }),
+  cursor: Joi.number()
+    .integer()
+    .min(0)
+    .max(1000000)
+    .default(0)
+    .messages({
+      'number.min': 'Cursor deve ser pelo menos 0',
+      'number.max': 'Cursor inválido'
     })
 });
 
@@ -188,5 +200,21 @@ export const listReportsQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).max(1000).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20),
   search: Joi.string().max(200).allow('').optional(),
-  banned: Joi.string().valid('true', 'false').optional()
+  banned: Joi.string().valid('true', 'false').optional(),
+  username: Joi.string().max(100).allow('').optional(),
+  email: Joi.string().max(150).allow('').optional(),
+  reason: Joi.string().max(100).allow('').optional()
+});
+
+export const reportIdSchema = Joi.object({
+  id: Joi.number()
+    .integer()
+    .positive()
+    .required()
+    .messages({
+      'number.base': 'ID do report deve ser um número',
+      'number.integer': 'ID do report deve ser um número inteiro',
+      'number.positive': 'ID do report deve ser positivo',
+      'any.required': 'ID do report é obrigatório'
+    })
 });

@@ -19,6 +19,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({
     status: '',
     search: '',
@@ -66,33 +67,21 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    if (user?.is_admin) {
-      fetchUsers(true);
-    }
-  }, [user, filters.status, filters.page]);
+    if (!user?.is_admin) return;
+    fetchUsers(!hasLoadedOnce).finally(() => setHasLoadedOnce(true));
+  }, [user?.is_admin, filters.status, filters.page, filters.search]);
 
   useEffect(() => {
-    if (user?.is_admin) {
-      fetchUsers(false);
-    }
-  }, [filters.search]);
+    const timeout = setTimeout(() => {
+      const rawSearch = searchInput.trim();
+      const normalizedSearch = rawSearch.length >= 2 ? rawSearch : '';
+      setFilters((prev) =>
+        prev.search === normalizedSearch ? prev : { ...prev, search: normalizedSearch, page: 1 }
+      );
+    }, 350);
 
-  useEffect(() => {
-    if (user?.is_admin && filters.search !== '') {
-      fetchUsers(false);
-    }
-  }, [filters.search]);
-
-  useEffect(() => {
-    if (user?.is_admin) {
-      fetchUsers(false);
-    }
-  }, [filters.search]);
-
-  // Sync searchInput with filters.search
-  useEffect(() => {
-    setSearchInput(filters.search);
-  }, [filters.search]);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const handleToggleBan = async (userId: number, currentBanStatus: boolean, username: string) => {
     const action = currentBanStatus ? 'desbanir' : 'banir';
@@ -125,7 +114,9 @@ export default function AdminUsersPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters({ ...filters, search: searchInput, page: 1 });
+    const rawSearch = searchInput.trim();
+    const normalizedSearch = rawSearch.length >= 2 ? rawSearch : '';
+    setFilters((prev) => ({ ...prev, search: normalizedSearch, page: 1 }));
   };
 
   if (authLoading || loading) {
@@ -205,10 +196,7 @@ export default function AdminUsersPage() {
                 <input
                   type="text"
                   value={searchInput}
-                  onChange={(e) => {
-                    setSearchInput(e.target.value);
-                    setFilters({ ...filters, search: e.target.value, page: 1 });
-                  }}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Nome de usuário ou email..."
                   className="flex-1 px-3 py-2 bg-card border border-card-border rounded-lg text-foreground placeholder-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary"
                 />

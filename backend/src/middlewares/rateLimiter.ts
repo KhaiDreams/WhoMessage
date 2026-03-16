@@ -1,10 +1,20 @@
 import rateLimit from 'express-rate-limit';
 
-// Rate limiting para rotas de autenticação
-export const authLimiter = rateLimit({
+// Rate limiting para login (conta apenas tentativas mal sucedidas)
+export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // máximo 5 tentativas de login por IP
+  max: 10, // máximo 10 tentativas falhas por IP
   message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting para registro
+export const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5, // máximo 5 registros por IP/hora
+  message: { error: 'Muitos cadastros em pouco tempo. Tente novamente em 1 hora.' },
   standardHeaders: true,
   legacyHeaders: false,
 });

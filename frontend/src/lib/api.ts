@@ -7,6 +7,55 @@ type RequestOptions = RequestInit & {
   showErrorToast?: boolean;
 };
 
+const ERROR_TOAST_WINDOW_MS = 3500;
+const ERROR_BURST_WINDOW_MS = 2500;
+const ERROR_BURST_THRESHOLD = 5;
+const ERROR_BURST_SILENCE_MS = 5000;
+const recentErrorToasts = new Map<string, number>();
+let errorBurstTimestamps: number[] = [];
+let silentErrorsUntil = 0;
+
+function showDedupedErrorToast(message: string) {
+  const normalized = (message || "Erro inesperado.")
+    .trim()
+    .toLowerCase()
+    .slice(0, 180);
+
+  const now = Date.now();
+  if (now < silentErrorsUntil) {
+    return;
+  }
+
+  errorBurstTimestamps = errorBurstTimestamps.filter(
+    (ts) => now - ts <= ERROR_BURST_WINDOW_MS
+  );
+  errorBurstTimestamps.push(now);
+
+  if (errorBurstTimestamps.length >= ERROR_BURST_THRESHOLD) {
+    silentErrorsUntil = now + ERROR_BURST_SILENCE_MS;
+    errorBurstTimestamps = [];
+    toast.error("Muitas falhas seguidas. Aguarde alguns segundos.");
+    return;
+  }
+
+  if (recentErrorToasts.size > 120) {
+    for (const [key, timestamp] of recentErrorToasts.entries()) {
+      if (now - timestamp > ERROR_TOAST_WINDOW_MS * 6) {
+        recentErrorToasts.delete(key);
+      }
+    }
+  }
+
+  const lastShownAt = recentErrorToasts.get(normalized);
+
+  if (lastShownAt && now - lastShownAt < ERROR_TOAST_WINDOW_MS) {
+    return;
+  }
+
+  recentErrorToasts.set(normalized, now);
+  toast.error(message, { toastId: `err:${normalized}` });
+}
+
 export async function apiFetch<T = any>(
   url: string,
   options: RequestOptions = {}
@@ -18,18 +67,22 @@ export async function apiFetch<T = any>(
     const data = await response.json();
 
     if (!response.ok) {
-      const msg = data.message || data.error || "Erro inesperado.";
-      if (showErrorToast) toast.error(msg);
+      let msg = data.message || data.error || "Erro inesperado.";
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        msg = data.errors[0]?.message || msg;
+      }
+      if (showErrorToast) showDedupedErrorToast(msg);
       
       const error = new Error(msg);
       (error as any).toastShown = true;
+      (error as any).details = Array.isArray(data.errors) ? data.errors : undefined;
       throw error;
     }
 
     return data;
   } catch (err: any) {
     if (showErrorToast && !err.toastShown) {
-      toast.error(err.message || "Erro de conexão.");
+      showDedupedErrorToast(err.message || "Erro de conexão.");
     }
     throw err;
   }
@@ -48,22 +101,22 @@ function withApiUrl(url: string) {
 }
 
 const api = {
-  get: (url: string, options: RequestInit = {}) => {
+  get: (url: string, options: RequestOptions = {}) => {
     const token = getToken();
     const headers = token ? { ...options.headers, Authorization: `Bearer ${token}` } : options.headers;
     return apiFetch(withApiUrl(url), { ...options, method: 'GET', headers });
   },
-  post: (url: string, body?: any, options: RequestInit = {}) => {
+  post: (url: string, body?: any, options: RequestOptions = {}) => {
     const token = getToken();
     const headers = token ? { ...options.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { ...options.headers, 'Content-Type': 'application/json' };
     return apiFetch(withApiUrl(url), { ...options, method: 'POST', headers, body: JSON.stringify(body) });
   },
-  put: (url: string, body?: any, options: RequestInit = {}) => {
+  put: (url: string, body?: any, options: RequestOptions = {}) => {
     const token = getToken();
     const headers = token ? { ...options.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { ...options.headers, 'Content-Type': 'application/json' };
     return apiFetch(withApiUrl(url), { ...options, method: 'PUT', headers, body: JSON.stringify(body) });
   },
-  delete: (url: string, options: RequestInit = {}) => {
+  delete: (url: string, options: RequestOptions = {}) => {
     const token = getToken();
     const headers = token ? { ...options.headers, Authorization: `Bearer ${token}` } : options.headers;
     return apiFetch(withApiUrl(url), { ...options, method: 'DELETE', headers });
@@ -142,6 +195,39 @@ export interface RecommendationsResponse {
     interests: number;
   };
   recommendations: Recommendation[];
+  pagination: {
+    cursor: number;
+    nextCursor: number | null;
+    hasMore: boolean;
+    total: number;
+  };
+}
+
+export interface BootstrapResponse {
+  user: User;
+  setupStatus: {
+    hasProfile: boolean;
+    hasGames: boolean;
+    hasInterests: boolean;
+  };
+  tags: {
+    gameIds: number[];
+    interestIds: number[];
+  };
+  unread: {
+    notifications: number;
+    messages: number;
+  };
+}
+
+export interface UserProfileFullResponse {
+  user: User;
+  games: Tag[];
+  interests: Tag[];
+  tagIds: {
+    gameIds: number[];
+    interestIds: number[];
+  };
 }
 
 export interface Like {
@@ -165,6 +251,7 @@ export interface Notification {
   user_id: number;
   from_user_id?: number;
   type: 'like_received' | 'match_created' | 'new_message';
+  canLikeBack?: boolean;
   title: string;
   message: string;
   read: boolean;
@@ -269,11 +356,11 @@ export interface AdminUsersResponse {
 
 // Auth
 export const authAPI = {
-  login: (email: string, password: string) => 
-    api.post('/auth/login', { email, password }),
+  login: (login: string, password: string, options: RequestOptions = {}) => 
+    api.post('/auth/login', { login, password }, options),
   
-  register: (userData: { username: string; email: string; password: string; age: number; bio?: string }) => 
-    api.post('/auth/register', userData),
+  register: (userData: { username: string; email: string; password: string; age: number; bio?: string; nicknames?: string[] }, options: RequestOptions = {}) => 
+    api.post('/auth/register', userData, options),
   
   getMe: (): Promise<User> => 
     api.get('/api/user/me')
@@ -283,9 +370,18 @@ export const authAPI = {
 export const userAPI = {
   getProfile: (): Promise<{ user: User }> => 
     api.get('/api/user/me'),
+
+  getBootstrap: (): Promise<BootstrapResponse> =>
+    api.get('/api/user/bootstrap'),
+
+  getMyProfileFull: (): Promise<UserProfileFullResponse> =>
+    api.get('/api/user/me/full'),
   
   getUserById: (userId: number): Promise<{ user: User }> =>
     api.get(`/users/${userId}`),
+
+  getUserProfileFull: (userId: number): Promise<UserProfileFullResponse> =>
+    api.get(`/users/${userId}/profile`),
   
   updateProfile: (userData: Partial<User> & { id: number }) => 
     api.put(`/users/${userData.id}`, userData),
@@ -304,8 +400,8 @@ export const userAPI = {
     });
   },
 
-  getRecommendations: (limit = 10): Promise<RecommendationsResponse> => 
-    api.get(`/api/tags/recommendations?limit=${limit}`)
+  getRecommendations: (limit = 10, cursor = 0): Promise<RecommendationsResponse> => 
+    api.get(`/api/tags/recommendations?limit=${limit}&cursor=${cursor}`)
 };
 
 // Interactions
