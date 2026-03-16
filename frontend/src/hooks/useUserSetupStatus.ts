@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { tagsAPI, userAPI, UserTagsResponse } from '@/lib/api';
+import { userAPI } from '@/lib/api';
 
 export interface UserSetupStatus {
   hasGames: boolean;
@@ -31,39 +31,11 @@ export default function useUserSetupStatus() {
     try {
       setStatus(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Verificar se tem perfil básico
-      const profileResponse = await userAPI.getProfile();
-      
-      // Backend retorna { user: {...} }
-      const user = (profileResponse as any)?.user;
-
-      const hasProfile = !!(user && user.username && user.age);
-
-      // Verificar se tem games
-      const userGamesResponse = await tagsAPI.getUserGames();
-      
-      const hasGames = !!(
-        userGamesResponse && 
-        typeof userGamesResponse === 'object' &&
-        Object.keys(userGamesResponse).length > 0 && // Não é objeto vazio {}
-        'pre_tag_ids' in userGamesResponse &&
-        userGamesResponse.pre_tag_ids && 
-        Array.isArray(userGamesResponse.pre_tag_ids) && 
-        userGamesResponse.pre_tag_ids.length > 0
-      );
-
-      // Verificar se tem interests
-      const userInterestsResponse = await tagsAPI.getUserInterests();
-      
-      const hasInterests = !!(
-        userInterestsResponse && 
-        typeof userInterestsResponse === 'object' &&
-        Object.keys(userInterestsResponse).length > 0 && // Não é objeto vazio {}
-        'pre_tag_ids' in userInterestsResponse &&
-        userInterestsResponse.pre_tag_ids && 
-        Array.isArray(userInterestsResponse.pre_tag_ids) && 
-        userInterestsResponse.pre_tag_ids.length > 0
-      );
+      const bootstrap = await userAPI.getBootstrap();
+      const { user, setupStatus } = bootstrap;
+      const hasProfile = setupStatus.hasProfile;
+      const hasGames = setupStatus.hasGames;
+      const hasInterests = setupStatus.hasInterests;
 
       setStatus({
         hasGames,
@@ -79,9 +51,8 @@ export default function useUserSetupStatus() {
         hasGames,
         hasInterests,
         hasProfile,
-        profile: user, // Retorna o user diretamente
-        userGames: userGamesResponse,
-        userInterests: userInterestsResponse,
+        profile: user,
+        tags: bootstrap.tags,
       };
 
     } catch (error: any) {
