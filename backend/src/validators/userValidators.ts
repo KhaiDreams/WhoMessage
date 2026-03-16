@@ -3,12 +3,12 @@ import Joi from 'joi';
 // Schema para registro de usuário
 export const registerSchema = Joi.object({
   username: Joi.string()
-    .alphanum()
+    .pattern(/^[a-zA-Z0-9_]+$/)
     .min(3)
     .max(30)
     .required()
     .messages({
-      'string.alphanum': 'O username deve conter apenas letras e números',
+      'string.pattern.base': 'O username deve conter apenas letras, números e _',
       'string.min': 'O username deve ter pelo menos 3 caracteres',
       'string.max': 'O username deve ter no máximo 30 caracteres',
       'any.required': 'Username é obrigatório'
@@ -93,12 +93,12 @@ export const changePasswordSchema = Joi.object({
 // Schema para atualização de usuário
 export const updateUserSchema = Joi.object({
   username: Joi.string()
-    .alphanum()
+    .pattern(/^[a-zA-Z0-9_]+$/)
     .min(3)
     .max(30)
     .optional()
     .messages({
-      'string.alphanum': 'O username deve conter apenas letras e números',
+      'string.pattern.base': 'O username deve conter apenas letras, números e _',
       'string.min': 'O username deve ter pelo menos 3 caracteres',
       'string.max': 'O username deve ter no máximo 30 caracteres'
     }),
