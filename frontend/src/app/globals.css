@@ -55,3 +55,43 @@ html {
     text-wrap: balance;
   }
 }
+
+/* Toasts com visual integrado ao tema do projeto */
+.Toastify__toast-container.wm-toast-container {
+  width: min(92vw, 370px);
+  padding: 0.5rem;
+}
+
+.Toastify__toast.wm-toast {
+  background: linear-gradient(180deg, rgba(15, 20, 25, 0.96), rgba(10, 11, 15, 0.96));
+  color: var(--foreground);
+  border: 1px solid var(--card-border);
+  border-left: 4px solid var(--primary);
+  border-radius: 14px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(8px);
+  min-height: 52px;
+}
+
+.Toastify__toast--error.wm-toast {
+  border-left-color: #ef4444;
+}
+
+.Toastify__toast--success.wm-toast {
+  border-left-color: #22c55e;
+}
+
+.Toastify__toast-body.wm-toast-body {
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+
+.Toastify__progress-bar.wm-toast-progress {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.Toastify__close-button {
+  color: var(--foreground);
+  opacity: 0.8;
+}
