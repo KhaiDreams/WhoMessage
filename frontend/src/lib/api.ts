@@ -1,6 +1,4 @@
 // lib/api.ts
-"use client";
-
 import { toast } from "react-toastify";
 
 type RequestOptions = RequestInit & {
@@ -300,36 +298,6 @@ export interface ReportsStatsResponse {
     status: string;
     count: number;
   }>;
-  total_reports: number;
-  banned_users: number;
-}
-
-export interface Report {
-  id: number;
-  reporter_id: number;
-  reported_user_id: number;
-  reason: string;
-  description?: string;
-  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
-  admin_notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  reporter?: User;
-  reportedUser?: User;
-}
-
-export interface ReportsResponse {
-  reports: Report[];
-  pagination: {
-    current_page: number;
-    total_pages: number;
-    total_reports: number;
-    per_page: number;
-  };
-}
-
-export interface ReportsStatsResponse {
-  reports_by_status: Array<{ status: string; count: number }>;
   total_reports: number;
   banned_users: number;
 }
