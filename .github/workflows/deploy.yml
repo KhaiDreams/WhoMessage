@@ -22,6 +22,6 @@ jobs:
             cd ~/WhoMessage
             git pull origin main
             cd backend
-            npm install --omit=dev
+            npm install
             npm run build
             pm2 restart whomessage-backend
