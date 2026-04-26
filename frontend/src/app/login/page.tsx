@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authAPI } from "@/lib/api";
+import { setAuthCookie } from "@/lib/authCookie";
 
 export default function Login() {
   const [login, setLogin] = useState("");
@@ -32,9 +33,11 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      const data = await authAPI.login(login, password, { showErrorToast: false });
+      const normalizedLogin = login.includes('@') ? login.toLowerCase().trim() : login.trim();
+      const data = await authAPI.login(normalizedLogin, password, { showErrorToast: false });
 
       localStorage.setItem("token", data.token);
+      setAuthCookie(data.token);
       router.push('/home');
     } catch (error: any) {
       setAuthError(error?.message || 'Não foi possível fazer login.');
