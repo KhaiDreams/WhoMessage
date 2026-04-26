@@ -16,6 +16,7 @@ export const registerSchema = Joi.object({
   
   email: Joi.string()
     .email()
+    .lowercase()
     .required()
     .messages({
       'string.email': 'Email deve ter um formato válido',
