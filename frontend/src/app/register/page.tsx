@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { authAPI } from "@/lib/api";
+import { setAuthCookie } from "@/lib/authCookie";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -125,7 +126,7 @@ export default function Register() {
       const nicknameToUse = formData.nickname.trim() || formData.username;
 
       const res = await authAPI.register({
-        email: formData.email,
+        email: formData.email.toLowerCase().trim(),
         password: formData.password,
         username: formData.username,
         bio: formData.bio,
@@ -134,6 +135,7 @@ export default function Register() {
       });
       if (res.token) {
         localStorage.setItem('token', res.token);
+        setAuthCookie(res.token);
       }
       // Após criar conta, deve ir para games primeiro, não interests
       router.push('/choose-games');

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { userAPI, tagsAPI, User, Tag } from '@/lib/api';
+import { clearAuthCookie } from '@/lib/authCookie';
 import { toast } from 'react-toastify';
 
 export const useProfile = () => {
@@ -95,6 +96,7 @@ export const useProfile = () => {
   // Fazer logout
   const logout = useCallback(() => {
     localStorage.removeItem('token');
+    clearAuthCookie();
     setUser(null);
     setUserGames([]);
     setUserInterests([]);

@@ -12,6 +12,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import { userAPI, type BootstrapResponse } from "@/lib/api";
+import { clearAuthCookie } from "@/lib/authCookie";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/", "/_error"];
 const SESSION_CACHE_TTL_MS = 20_000;
@@ -127,6 +128,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("is_admin");
+      clearAuthCookie();
     }
 
     setState({

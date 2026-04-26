@@ -74,9 +74,13 @@ server.use('/api', interactionsRoutes);
 server.use('/api', reportsRoutes);
 server.use('/api/chat', chatRoutes);
 
-server.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
-    if (!err) return next();
+// 404 fallback — deve ficar antes do error handler e do listen()
+server.use((_req: Request, res: Response) => {
+    res.status(404).json({ error: 'NOT_FOUND', message: 'Rota não encontrada.' });
+});
 
+// Global error handler
+server.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(413).json({ error: 'IMAGE_TOO_LARGE', message: 'Arquivo muito grande.' });
@@ -84,7 +88,14 @@ server.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
         return res.status(400).json({ error: 'UPLOAD_ERROR', message: err.message });
     }
 
-    return res.status(400).json({ error: 'BAD_REQUEST', message: err.message || 'Requisição inválida.' });
+    // Erros HTTP explícitos (ex: CORS)
+    const statusCode = typeof err.status === 'number' && err.status >= 400 ? err.status : 500;
+    if (statusCode >= 500) {
+        console.error('Unhandled error:', err);
+        return res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Erro interno do servidor.' });
+    }
+
+    return res.status(statusCode).json({ error: 'BAD_REQUEST', message: err.message || 'Requisição inválida.' });
 });
 
 const PORT = process.env.PORT;
@@ -102,8 +113,4 @@ httpServer.listen(PORT, () => {
             });
         }, 14 * 60 * 1000);
     }
-});
-
-server.use((req: Request, res: Response) => {
-    res.status(404).json({ error: 'Página não encontrada.' });
 });

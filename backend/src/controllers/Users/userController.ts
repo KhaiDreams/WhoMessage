@@ -84,11 +84,14 @@ export const loginUser = async (req: Request, res: Response) => {
     try {
         const { login, password } = req.body;
 
+        // Normaliza login: se parecer um email, força lowercase
+        const normalizedLogin = login.includes('@') ? login.toLowerCase() : login;
+
         // Busca por email ou username
         const user = await User.findOne({
             where: {
                 [Op.or]: [
-                    { email: login },
+                    { email: normalizedLogin },
                     { username: login }
                 ]
             }
