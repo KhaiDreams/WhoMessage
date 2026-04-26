@@ -105,6 +105,7 @@ export async function apiFetch<T = any>(
   } catch (err: any) {
     if (showErrorToast && !err.toastShown) {
       showDedupedErrorToast(err.message || "Erro de conexão.");
+      err.toastShown = true;
     }
     throw err;
   }
