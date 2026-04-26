@@ -62,7 +62,30 @@ export async function apiFetch<T = any>(
 
   try {
     const response = await fetch(url, fetchOptions);
-    const data = await response.json();
+
+    if (response.status === 413) {
+      const msg = "A imagem é muito grande. Por favor, escolha uma imagem menor.";
+      if (showErrorToast) showDedupedErrorToast(msg);
+      const error = new Error(msg);
+      (error as any).toastShown = true;
+      (error as any).status = 413;
+      throw error;
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch {
+      if (!response.ok) {
+        const msg = `Erro ${response.status}: ${response.statusText || "Erro inesperado."}`;
+        if (showErrorToast) showDedupedErrorToast(msg);
+        const error = new Error(msg);
+        (error as any).toastShown = true;
+        (error as any).status = response.status;
+        throw error;
+      }
+      return undefined as T;
+    }
 
     if (!response.ok) {
       let msg = data.message || data.error || "Erro inesperado.";
@@ -73,6 +96,7 @@ export async function apiFetch<T = any>(
       
       const error = new Error(msg);
       (error as any).toastShown = true;
+      (error as any).status = response.status;
       (error as any).details = Array.isArray(data.errors) ? data.errors : undefined;
       throw error;
     }
